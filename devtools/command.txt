@@ -1,0 +1,1 @@
+npx ts-node devtools/admin-cli.ts

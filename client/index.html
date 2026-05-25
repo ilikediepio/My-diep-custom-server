@@ -1,0 +1,211 @@
+<!--
+    DiepCustom - custom tank game server that shares diep.ios WebSocket protocol
+    Copyright (C) 2022 ABCxFF (github.com/ABCxFF)
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published
+    by the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program. If not, see <https://www.gnu.org/licenses/>
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<html>
+  <head>
+    <link rel="icon" href="https://i.postimg.cc/T3XsvxdX/icon.png"/> // original: https://raw.githubusercontent.com/ABCxFF/diepcustom/main/icon.png
+    <title>diep.io dev mode</title>
+
+    <style>
+      body {
+        background-color: #000000;
+      }
+
+      #canvas {
+        border: 0;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        height: 100%;
+        cursor: default;
+      }
+
+      #loading {
+        color: #FFFFFF;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 48pt;
+        font-family: sans-serif;
+        font-weight: bold;
+        cursor: default;
+      }
+
+      #textInputContainer {
+        display: none;
+        position: absolute;
+      }
+
+      #textInput {
+        background-color: transparent;
+        font-family: "Ubuntu";
+        padding: 0;
+        border: 0;
+        outline: none;
+      }
+
+      //#leaderboardBtn {
+      //  position: absolute;
+      //  top: 20px;
+      //  right: 20px;
+      //  z-index: 10;
+      //  font-family: "Ubuntu";
+      //  font-size: 28pt;
+      //  padding: 20px 40px;
+      //  background-color: #222;
+      //  color: #fff;
+      //  border: 2px solid #444;
+      //  border-radius: 12px;
+      //  cursor: pointer;
+      //}
+
+      //#leaderboardOverlay {
+      //  display: none;
+      //  position: fixed;
+      //  top: 0;
+      //  left: 0;
+      //  width: 100vw;
+      //  height: 100vh;
+      //  background-color: rgba(0, 0, 0, 0.85);
+      //  z-index: 999;
+      //  color: white;
+      //  font-family: "Ubuntu";
+      //  overflow-y: auto;
+      //}
+
+      //#leaderboardContent {
+      //  max-width: 600px;
+      //  margin: 50px auto;
+      //  padding: 20px;
+      //  background-color: #111;
+      //  border: 2px solid #444;
+      //  border-radius: 12px;
+      //  text-align: center;
+      //}
+
+      //#leaderboardContent h1 {
+      //  font-size: 36pt;
+      //  margin-bottom: 20px;
+      //}
+
+      //#leaderboardList {
+      //  list-style: none;
+      //  padding: 0;
+      //  margin: 0;
+      // font-size: 20pt;
+      //  text-align: left;
+      //}
+
+      //#leaderboardList li {
+      //  padding: 5px 0;
+      //  border-bottom: 1px solid #333;
+      //}
+
+      //#closeLeaderboard {
+      //  margin-top: 20px;
+      //  font-size: 16pt;
+      //  padding: 10px 30px;
+      //  background-color: #222;
+      //  color: white;
+      //  border: 1px solid #555;
+      //  border-radius: 8px;
+      //  cursor: pointer;
+      //}
+    </style>
+
+    <link href="https://fonts.googleapis.com/css?family=Ubuntu:700" rel="stylesheet" type="text/css" />
+  </head>
+
+  <body>
+    <span id="loading">Loading...</span>
+    <canvas id="canvas" width="800" height="800"></canvas>
+    <div style="font-family:'Ubuntu'">&nbsp;</div>
+    <div id="textInputContainer"><input id="textInput"></div>
+
+    <!-- Leaderboard Overlay -->
+    <div id="leaderboardOverlay">
+      <div id="leaderboardContent">
+        <h1>Top 25 Players</h1>
+        <ol id="leaderboardList">
+          <!-- Placeholder entries -->
+          <li>#1 - </li>
+          <li>#2 - </li>
+          <li>#3 - </li>
+          <li>#4 - </li>
+          <li>#5 - </li>
+          <li>#6 - </li>
+          <li>#7 - </li>
+          <li>#8 - </li>
+          <li>#9 - </li>
+          <li>#10 - </li>
+          <li>#11 - </li>
+          <li>#12 - </li>
+          <li>#13 - </li>
+          <li>#14 - </li>
+          <li>#15 - </li>
+          <li>#16 - </li>
+          <li>#17 - </li>
+          <li>#18 - </li>
+          <li>#19 - </li>
+          <li>#20 - </li>
+          <li>#21 - </li>
+          <li>#22 - </li>
+          <li>#23 - </li>
+          <li>#24 - </li>
+          <li>#25 - </li>
+        </ol>
+        <button id="closeLeaderboard">Close</button>
+      </div>
+    </div>
+
+    <!-- Leaderboard Button -->
+    <button id="leaderboardBtn" type="button">Show Leaderboard</button>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/gh/Qwokka/wail.min.js@5e32d36bd7a5e0830d1ff4b64d3587aea13f77da/wail.min.js" crossorigin="anonymous"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const leaderboardBtn = document.getElementById("leaderboardBtn");
+        const overlay = document.getElementById("leaderboardOverlay");
+        const closeBtn = document.getElementById("closeLeaderboard");
+
+        leaderboardBtn.addEventListener("click", function () {
+          overlay.style.display = "block";
+        });
+
+        closeBtn.addEventListener("click", function () {
+          overlay.style.display = "none";
+        });
+      });
+    </script>
+
+    <script src="./config.js"></script>
+    <script src="./input.js"></script>
+    <script src="./dma.js"></script>
+    <script src="./loader.js"></script>
+  </body>
+</html>

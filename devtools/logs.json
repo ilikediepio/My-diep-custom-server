@@ -1,0 +1,47 @@
+[
+  {
+    "action": "BAN",
+    "data": {
+      "ip": "127.0.0.1",
+      "durationHours": 1,
+      "reason": "test",
+      "expiresAt": 1777910669876
+    },
+    "time": 1777907069878
+  },
+  {
+    "action": "UNBAN",
+    "data": {
+      "ip": "127.0.0.1"
+    },
+    "time": 1777909672244
+  },
+  {
+    "action": "UNBAN",
+    "data": {
+      "ip": "127.0.0.1"
+    },
+    "time": 1777909712031
+  },
+  {
+    "action": "UNBAN",
+    "data": {
+      "ip": "127.0.0.1"
+    },
+    "time": 1777910999187
+  },
+  {
+    "action": "UNBAN",
+    "data": {
+      "ip": "127.0.0.1"
+    },
+    "time": 1777911894914
+  },
+  {
+    "action": "UNBAN",
+    "data": {
+      "ip": "127.0.0.1"
+    },
+    "time": 1779625984413
+  }
+]
