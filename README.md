@@ -31,9 +31,6 @@ Consult `src/config.ts` for configuration, and `package.json` for environ variab
 This is a modified version of a diep.io private server project.  
 No official Discord is currently maintained for this fork.
 
-## Contribution
-
-Not currently taking susgestions, might change in the future
 
 ## License
 
