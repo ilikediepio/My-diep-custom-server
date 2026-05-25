@@ -33,7 +33,7 @@ No official Discord is currently maintained for this fork.
 
 ## Contribution
 
-Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for information on contributing.
+Not currently taking susgestions, might change in the future
 
 ## License
 
