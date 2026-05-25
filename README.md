@@ -2,7 +2,7 @@
 <div align="center">
 <img src="./icon.png" width="20%" />
 <h3> diep custom </h3>
-<p> An open source diep.io custom private-server template </p>
+<p> An open-source diep.io custom private-server based on AGPL-licensed software </p>
 </div>
 <br>
 
@@ -26,14 +26,19 @@ After running the server, content will be served at `localhost:PORT` on your com
 
 Consult `src/config.ts` for configuration, and `package.json` for environ variable setup.
 
-## Discord Chat
+## Community
 
-For support or discussion, please join our [online Discord chat](https://discord.gg/SyxWdxgHnT).
+This is a modified version of a diep.io private server project.  
+No official Discord is currently maintained for this fork.
 
 ## Contribution
 
 Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for information on contributing.
 
 ## License
+
+This project is licensed under the GNU Affero General Public License v3.0.
+
+You must provide source code to users if you run a modified version on a public server.
 
 Please see [LICENSE](./LICENSE)
