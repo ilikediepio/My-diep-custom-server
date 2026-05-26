@@ -247,7 +247,7 @@ case 'bullet': {
 
     if (
         tankDefinition &&
-        (tankDefinition.id === Tank.ArenaCloser || tankDefinition.id === DevTank.Squirrel)
+        (tankDefinition.id === Tank.ArenaCloser || tankDefinition.id === DevTank.Squirrel || tankDefinition.id === Tank.DominatorG || tankDefinition.id === Tank.DominatorD || tankDefinition.id === Tank.DominatorT)
     ) {
         bullet.positionData.flags |= PositionFlags.canMoveThroughWalls;
     }

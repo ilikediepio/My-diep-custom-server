@@ -12,9 +12,6 @@ make it so that only shiny+ can shinyafy tanks
 credit shiny members and shiny+ members in vids
 make it so you can't go immortal while using the anti ac sniper
 
-make tri missile launcher (level 60), big missile launcher (larger missile, same damage. level 60), and nuke launcher (expanding bullet, each barrel's bullet is larger than the last to make an expanding effect level 75).
-
-Make old arena closer using the stats provided and the barrel is like a sniper/assassin
+make tri missile launcher (level 60), like tri shot so it spreads in different directions
 
 BASE DRONES DEAL THE SAME AMOUNT OF DAMAGE PER TICK AS AN UNUGRADED BASIC LETSGO I FOUND IT OUT!!!!! (don't delete this)
-Make lightsaber bullet death animation faster.

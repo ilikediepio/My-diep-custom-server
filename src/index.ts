@@ -168,12 +168,12 @@ app.listen(PORT, (success) => {
     // RULES(0): No two game servers should share the same endpoint
     //
     // NOTES(0): As of now, both servers run on the same process (and thread) here
-    const ffa = new GameServer("ffa", "FFA");
+    //const ffa = new GameServer("ffa", "FFA");
     const sbx = new GameServer("sandbox", "Sandbox");
-    const te2 = new GameServer("teams", "2tdm");
-    const te4 = new GameServer("4teams", "4tdm");
-    const mot = new GameServer("mot", "Mothership");
-    const dom = new GameServer("dom", "Domination");
+    //const te2 = new GameServer("teams", "2tdm");
+    //const te4 = new GameServer("4teams", "4tdm");
+    //const mot = new GameServer("mot", "Mothership");
+    //const dom = new GameServer("dom", "Domination");
     //const maz = new GameServer("maze", "Maze");
     const tes = new GameServer("testing", "Tests");
     //const spi = new GameServer("spike", "Spikebox");
@@ -181,7 +181,7 @@ app.listen(PORT, (success) => {
     //const jun = new GameServer("jungle", "Alpha shapes");
     //const fac = new GameServer("factest", "Factest");
     const bal = new GameServer("ball", "Ball");
-    const ace = new GameServer("ACescape", "AC Escape");
+    //const ace = new GameServer("ACescape", "AC Escape");
     //const bar = new GameServer("barrier", "Vortex");
     const atm = new GameServer("atmg", "Atmg");
     const nex = new GameServer("nexus", "Nexus");
@@ -199,9 +199,7 @@ try {
 }
     if (pvp) {
     games.push(
-        ffa, sbx, te2, te4, mot, dom, tes,
-        dot, bal, ace, atm,
-        nex, sie, bho, eve, pvp
+        sbx, dot, bal, atm, nex, sie, bho, eve, pvp
     );
 } //else {
   //  games.push(
