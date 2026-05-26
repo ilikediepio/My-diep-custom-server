@@ -35,6 +35,7 @@ No official Discord is currently maintained for this fork.
 ## License
 
 This project is licensed under the GNU Affero General Public License v3.0.
+This project is fan made, I do not own nor claim to own any of the original code / assets in this project
 
 You must provide source code to users if you run a modified version on a public server.
 
