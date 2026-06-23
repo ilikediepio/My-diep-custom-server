@@ -26,6 +26,8 @@ After running the server, content will be served at `localhost:PORT` on your com
 
 Consult `src/config.ts` for configuration, and `package.json` for environ variable setup.
 
+For further information, check the file in project root named "Zhow to run the game.txt" found at the very bottom of the folder (when sorted by name)
+
 ## Community
 
 This is a modified version of a diep.io private server project.  
@@ -35,8 +37,8 @@ No official Discord is currently maintained for this fork.
 ## License
 
 This project is licensed under the GNU Affero General Public License v3.0.
-This project is fan made, I do not own nor claim to own any of the original code / assets in this project
+This project is fan made, I do not own nor claim to own any of the original code or assets in this project
 
-You must provide source code to users if you run a modified version on a public server.
+You must provide source code to users if you run a modified version on a public server. (like what I am doing here)
 
 Please see [LICENSE](./LICENSE)
