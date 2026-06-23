@@ -85,6 +85,7 @@ import BounceWall from "../Entity/Misc/BounceWall";
 import { SpawnCategory, SPAWN_LIMITS } from "./SpawnLimits";
 import { getSpawnCategory } from "./SpawnCategoryResolver";
 import { bannedClients } from "../index";
+import DebugEntity from "../Entity/Misc/DebugEntity";
 
 
 const RELATIVE_POS_REGEX = new RegExp(/~(-?\d+)?/);
@@ -1592,7 +1593,8 @@ const entityMap = new Map<string, new (...args: any[]) => ObjectEntity>([
     ["xbh", xBlackHole],
     ["ims", ImmortalSnail],
     ["xau", xAura],
-    ["dop", DestroyerOfPlayers]
+    ["dop", DestroyerOfPlayers],
+    ["bug", DebugEntity]
 ]);
 
 const TEntity = entityMap.get(entityArg);
