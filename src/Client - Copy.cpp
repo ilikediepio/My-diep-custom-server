@@ -340,28 +340,14 @@ if (ip && frozenIPs.has(ip)) {
                     if (this.accessLevel >= config.AccessLevel.BetaAccess) {
                         this.setHasCheated(true);
                         player.setTank(player.currentTank < 0 ? Tank.Basic : DevTank.Developer);
-                
                     } else if (this.game.arena.arenaData.values.flags & ArenaFlags.canUseCheats) {
-                
-                        // Removed singleplayer restriction
-                        if (this.game.arena.state === ArenaState.OPEN) {
-                
+                        //if (this.game.clients.size === 1 && this.game.arena.state === ArenaState.OPEN) {
                             this.setHasCheated(true);
-                
-                            const newState = !player.isInvulnerable;
-                
-                            player.setInvulnerability(newState);
-                
-                            // Force property update in case setInvulnerability is incomplete
-                            player.isInvulnerable = newState;
-                
-                            this.notify(
-                                `God mode: ${player.isInvulnerable ? "ON" : "OFF"}`,
-                                0x000000,
-                                1000,
-                                'godmode'
-                            );
-                        }
+
+                            player.setInvulnerability(!player.isInvulnerable);
+                            
+                            this.notify(`God mode: ${player.isInvulnerable ? "ON" : "OFF"}`, 0x000000, 1000, 'godmode');
+                        //}
                     }
                 }
 

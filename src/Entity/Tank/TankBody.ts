@@ -263,10 +263,10 @@ export default class TankBody extends LivingEntity implements BarrelBase {
         this.positionData.angle = Math.atan2(this.inputs.mouse.y - this.positionData.values.y, this.inputs.mouse.x - this.positionData.values.x);
 
         if (this.isInvulnerable) {
-            if (this.game.clients.size !== 1 || this.game.arena.state !== ArenaState.OPEN) {
-                // not for ACs
-                if (this.cameraEntity instanceof ClientCamera && this.cameraEntity.client.accessLevel < AccessLevel.FullAccess) this.setInvulnerability(false);
-            }
+            //if (this.game.clients.size !== 1 || this.game.arena.state !== ArenaState.OPEN) {
+                // not for ACs (disabled)
+            //    if (this.cameraEntity instanceof ClientCamera && this.cameraEntity.client.accessLevel < AccessLevel.FullAccess) this.setInvulnerability(false);
+            //}
         }
         if (!this.deletionAnimation && !this.inputs.deleted) this.physicsData.size = this.baseSize * this.cameraEntity.sizeFactor;
         else this.regenPerTick = 0;

@@ -1,38 +1,9 @@
 import readline from "readline-sync";
 import fs from "fs";
 import path from "path";
-import type GameServer from "../src/Game";
-import { liveClients } from "../src/Globals";
+import GameServer from "../src/Game";
 
-import http from "http";
-import { execFileSync } from "child_process";
-
-function listPlayers() {
-    try {
-        const raw = execFileSync(
-            "curl",
-            ["-s", "http://localhost:8080/api/players"],
-            { encoding: "utf8" }
-        ).trim();
-
-        const players = JSON.parse(raw || "[]");
-
-        console.log("\n--- CURRENT PLAYERS ---");
-
-        if (!players.length) {
-            console.log("No players online.");
-            return;
-        }
-
-        for (const p of players) {
-            console.log(`${p.ip} | ${p.name}`);
-        }
-    } catch (err: any) {
-        console.log("Failed to load players:", err?.message || String(err));
-    }
-}
-
-let games: GameServer[] = [];
+let game: GameServer | null = null;
 
 type LogEntry = {
     ip: string;
@@ -59,21 +30,19 @@ const FROZE_FILE = path.join(BASE, "frozen.json");
 // =========================
 // HELPERS
 // =========================
+//export const frozenIPs = new Set<string>();
 
-export function startCLI(g: GameServer[] = []) {
-    console.log("STARTCLI CALLED");
-    console.log("received", g.length, "servers");
+//export function canonicalIP(ip: string): string {
+//    return String(ip).trim().toLowerCase();
+//}
 
-    games = g;
-
-    console.log("stored", games.length, "servers");
-
-    if (games.length === 0) {
-        console.log("⚠ CLI attached, but no game servers are available yet.");
-        return;
+export function startCLI(g: GameServer) {
+    game = g;
+    menu();
+    if (!game) {
+    console.log("❌ Game server not attached to CLI.");
+    return;
     }
-
-    console.log("✅ CLI attached to GameServer");
 }
 
 function now(): number {
@@ -326,30 +295,34 @@ function listRecent(hours: number) {
     }
 }
 
-//function listPlayers() {
-//    console.log("\n--- CURRENT PLAYERS ---");
-//
-//    if (liveClients.size === 0) {
-//        console.log("No players currently online.");
-//        return;
-//    }
-//
-//    let totalPlayers = 0;
-//
-//    for (const c of liveClients) {
-//        const ip = c.ws?.getUserData().ipAddress;
-//        if (!ip) continue;
-//
-//        const name =
-//            c.camera?.cameraData?.player?.nameData?.values.name ||
-//            "Unnamed";
-//
-//        console.log(`${canonicalIP(ip)} | ${name}`);
-//        totalPlayers++;
-//    }
-//
-//    console.log(`\nTotal Players: ${totalPlayers}`);
-//}
+function listPlayers(game: GameServer) {
+    const players = new Map<
+        string,
+        { name: string }
+    >();
+
+    for (const c of game.clients) {
+        const ip = c.ws?.getUserData().ipAddress;
+        if (!ip) continue;
+
+        const name =
+            c.camera?.cameraData?.player?.nameData?.values.name ||
+            "Unnamed";
+
+        players.set(canonicalIP(ip), { name });
+    }
+
+    console.log(`\n--- CURRENT PLAYERS IN GAME ---`);
+
+    if (players.size === 0) {
+        console.log("No players currently online.");
+        return;
+    }
+
+    for (const [ip, data] of players.entries()) {
+        console.log(`${ip} | ${data.name}`);
+    }
+}
 
 function listRepeatedConnections(threshold = 200, hours = 24) {
     const logs = load(LOG_FILE) as LogEntry[];
@@ -430,7 +403,11 @@ function menu() {
         }
 
         case "5": {
-            listPlayers();
+            if (!game) {
+            console.log("❌ Game server not attached to CLI");
+            break;
+        }
+            listPlayers(game);
             break;
         }
 

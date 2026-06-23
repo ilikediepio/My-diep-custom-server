@@ -51,6 +51,7 @@ export default class Atmg extends TankBody {
         this.ai.viewRange = 6000;
 
         this.setTank(Tank.Atmg);
+        //this.ai.onlyTargetPlayers = true;
         this.flags.adminFlags |= AdminFlags.immuneToKillCommand;
 
         const def = (this.definition = Object.assign({}, this.definition));
@@ -73,7 +74,7 @@ export default class Atmg extends TankBody {
         }
 
         this.ai.aimSpeed = this.barrels[0].bulletAccel * 1.6;
-        this.setInvulnerability(true);
+        //this.setInvulnerability(true);
     }
 
     public tick(tick: number) {

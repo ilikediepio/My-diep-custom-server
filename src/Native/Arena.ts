@@ -21,6 +21,7 @@ import ShapeManager from "../Entity/Shape/Manager";
 import TankBody from "../Entity/Tank/TankBody";
 import ArenaCloser from "../Entity/Misc/ArenaCloser";
 import ServerCloser from "../Entity/Misc/ServerCloser";
+import TrueArenaCloser from "../Entity/Misc/TrueArenaCloser";
 import ClientCamera from "./Camera";
 
 import { VectorAbstract } from "../Physics/Vector";
@@ -157,7 +158,7 @@ export default class ArenaEntity extends Entity implements TeamGroupEntity {
 			const acCount = Math.floor(Math.sqrt(this.width) / 10);
 			const radius = this.width * Math.SQRT1_2 + 500;
 			for (let i = 0; i < acCount; ++i) {
-				const ac = new ArenaCloser(this.game);
+				const ac = new TrueArenaCloser(this.game);
 
 				const angle = (i / acCount) * PI2;
 				ac.positionData.values.x = Math.cos(angle) * radius;

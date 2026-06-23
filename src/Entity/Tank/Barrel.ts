@@ -46,6 +46,7 @@ import InvisBullet from "./Projectile/InvisBullet";
 import EraserBullet from "./Projectile/EraserBullet";
 import FactorialBullet from "./Projectile/Factorial";
 import CracshotBullet from "./Projectile/Cracshot";
+import OrbitalStrikeBullet from "./Projectile/OrbitalStrike";
 
 import BulletRed from "./Projectile/ColorBullets/Bullet - Red";
 import BulletOrange from "./Projectile/ColorBullets/Bullet - Orange";
@@ -403,6 +404,9 @@ case 'bullet': {
                 break;
             case "cracshot":
                 new CracshotBullet(this, this.tank, tankDefinition, angle);
+                break;
+            case 'orbitalstrike':
+                new OrbitalStrikeBullet(this, this.tank, tankDefinition, angle);
                 break;
 case 'square': {
     const square = new Square(this.game, false);

@@ -111,7 +111,19 @@ export default class SeigeGuardian extends TankBody {
         }
     }
 
+    //private lastHealthLog = 0;
+    //
     public tick(tick: number) {
+    //    const now = Date.now();
+    //
+    //    if (now - this.lastHealthLog >= 1000) {
+    //        this.lastHealthLog = now;
+    //
+    //        console.log(
+    //            `[BASE HP] ${this.healthData.values.health} / ${this.healthData.values.maxHealth}`
+    //        );
+    //    }
+
         this.ai.movementSpeed = this.cameraEntity.cameraData.values.movementSpeed * 6;
         this.inputs = this.ai.inputs;
 

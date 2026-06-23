@@ -664,6 +664,7 @@ public spawnPlayer(tank: TankBody, client: Client) {
     tank.positionData.values.x = 2 * arenaSize * Math.random() - arenaSize;
 
     const yOffset = (Math.random() - 0.5) * baseWidth;
+    tank.setTank(Tank.Tank);
 
     const base = this.playerTeamMap.get(client) || [this.blueTeamBase, this.redTeamBase][Math.random() < 0.5 ? 0 : 1];
 

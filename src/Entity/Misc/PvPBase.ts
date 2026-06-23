@@ -18,7 +18,7 @@
 
 import { ClientInputs } from "../../Client";
 import { tps } from "../../config";
-import { Color, Tank, Stat, ColorsHexCode, ClientBound, TeamFlags } from "../../Const/Enums";
+import { Color, Tank, Stat, ColorsHexCode, ClientBound, TeamFlags, AdminFlags } from "../../Const/Enums";
 import GameServer from "../../Game";
 import ArenaEntity from "../../Native/Arena";
 import { CameraEntity } from "../../Native/Camera";
@@ -63,7 +63,9 @@ constructor(game: GameServer, arena: PvPArena, team: TeamBase, x: number, y: num
     // AI
     this.ai = new AI(this, true);
     this.ai.inputs = inputs;
-    this.ai.viewRange = 2000;
+    this.ai.viewRange = 2600;
+    this.ai.onlyTargetPlayers = true;
+    this.flags.adminFlags |= AdminFlags.immuneToKillCommand;
 
     // fixed position
     this.positionData.values.x = x;
@@ -81,7 +83,7 @@ constructor(game: GameServer, arena: PvPArena, team: TeamBase, x: number, y: num
     camera.cameraData.values.player = this;
 
     for (let i = Stat.MovementSpeed; i < Stat.HealthRegen; ++i) {
-        camera.cameraData.values.statLevels.values[i] = 4;
+        camera.cameraData.values.statLevels.values[i] = 7;
     }
 
     camera.cameraData.values.statLevels.values[Stat.HealthRegen] = 0;

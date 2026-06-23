@@ -17,12 +17,12 @@
 */
 
 import Client from "../Client";
-import { Color, ArenaFlags, Tank } from "../Const/Enums";
+import { Color, ArenaFlags, Tank, ClientBound } from "../Const/Enums";
 import TeamBase from "../Entity/Misc/TeamBase";
 import { TeamEntity } from "../Entity/Misc/TeamEntity";
 import TankBody from "../Entity/Tank/TankBody";
 import GameServer from "../Game";
-import ArenaEntity from "../Native/Arena";
+import ArenaEntity, { ArenaState } from "../Native/Arena";
 import BaseGuardian from "../Entity/Misc/BaseGuardian";
 import GDominator from "../Entity/Misc/GDominator";
 import AcDominator from "../Entity/Misc/AcDominator";
@@ -56,6 +56,32 @@ export default class PvPArena extends ArenaEntity {
 
     /** Maps clients to their teams */
     public playerTeamMap: Map<Client, TeamBase> = new Map();
+
+    public pvpBaseBlue!: PvPBase;
+    public pvpBaseRed!: PvPBase;
+
+    public ended: boolean = false;
+
+public endGame(winningTeam: "blue" | "red") {
+    if (this.ended) return;
+    this.ended = true;
+
+    this.game.broadcast()
+        .u8(ClientBound.Notification)
+        .stringNT(`${winningTeam.toUpperCase()} TEAM WINS!`)
+        .u32(winningTeam === "blue" ? Color.TeamBlue : Color.TeamRed)
+        .float(-1)
+        .stringNT("")
+        .send();
+
+    // close arena after delay
+if (this.state === ArenaState.OPEN) {
+    this.state = ArenaState.OVER;
+    setTimeout(() => {
+        this.close();
+    }, 5000);
+  }
+}
 
     public constructor(game: GameServer) {
         super(game);
@@ -102,6 +128,11 @@ new AcDominator(
     Tank.ArenaCloser
 );
 
+// Bases
+
+new PvPBase(game, this, this.blueTeamBase, 0, 9000, Color.TeamBlue, "blue");
+new PvPBase(game, this, this.redTeamBase, 0, -9000, Color.TeamRed, "red");
+
 // walls
 
 // Left upper vertical
@@ -136,9 +167,6 @@ this.Wall = new Wall(game, -3800, -7400, 400, 400);
 this.Wall = new Wall(game, -3800, -7800, 400, 400);
 this.Wall = new Wall(game, -3800, -8200, 400, 400);
 this.Wall = new Wall(game, -3800, -8600, 400, 400);
-//this.Wall = new Wall(game, -3800, -9000, 400, 400);
-//this.Wall = new Wall(game, -3800, -9400, 400, 400);
-//this.Wall = new Wall(game, -3800, -9800, 400, 400);
 
 // Right upper vertical
 this.Wall = new Wall(game, 1000, -1000, 400, 400);
@@ -172,9 +200,6 @@ this.Wall = new Wall(game, 3800, -7400, 400, 400);
 this.Wall = new Wall(game, 3800, -7800, 400, 400);
 this.Wall = new Wall(game, 3800, -8200, 400, 400);
 this.Wall = new Wall(game, 3800, -8600, 400, 400);
-//this.Wall = new Wall(game, 3800, -9000, 400, 400);
-//this.Wall = new Wall(game, 3800, -9400, 400, 400);
-//this.Wall = new Wall(game, 3800, -9800, 400, 400);
 
 // Right middle structure
 this.Wall = new Wall(game, 3800, -7000, 400, 400);
@@ -639,6 +664,7 @@ public spawnPlayer(tank: TankBody, client: Client) {
     tank.positionData.values.x = 2 * arenaSize * Math.random() - arenaSize;
 
     const yOffset = (Math.random() - 0.5) * baseWidth;
+    tank.setTank(Tank.Tank);
 
     const base = this.playerTeamMap.get(client) || [this.blueTeamBase, this.redTeamBase][Math.random() < 0.5 ? 0 : 1];
 

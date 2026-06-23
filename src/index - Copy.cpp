@@ -150,27 +150,6 @@ app.get("/api/players", (res) => {
             case "/colors":
                 res.writeStatus("200 OK").end(JSON.stringify(ColorsHexCode));
                 return;
-            case "/players": {
-
-    const players = [];
-
-    for (const c of liveClients) {
-        const ip = c.ws?.getUserData().ipAddress;
-        const name =
-            c.camera?.cameraData?.player?.nameData?.values.name ||
-            "Unnamed";
-
-        if (!ip) continue;
-
-        players.push({
-            ip,
-            name
-        });
-    }
-
-    res.writeStatus("200 OK").end(JSON.stringify(players));
-    return;
-}
         }
     }
 

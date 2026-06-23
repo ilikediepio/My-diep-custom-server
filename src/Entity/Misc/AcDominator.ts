@@ -59,7 +59,7 @@ export default class AcDominator extends TankBody {
         this.ai = new AI(this, true);
         this.ai.inputs = inputs;
         this.ai.movementSpeed = 0;
-        this.ai.viewRange = 2300;
+        this.ai.viewRange = 2250;
         this.ai.doAimPrediction = true;
         this.flags.adminFlags |= AdminFlags.immuneToKillCommand;
 

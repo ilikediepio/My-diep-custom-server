@@ -5,31 +5,28 @@ import type GameServer from "../src/Game";
 import { liveClients } from "../src/Globals";
 
 import http from "http";
-import { execFileSync } from "child_process";
 
 function listPlayers() {
-    try {
-        const raw = execFileSync(
-            "curl",
-            ["-s", "http://localhost:8080/api/players"],
-            { encoding: "utf8" }
-        ).trim();
+    http.get("http://localhost:8080/api/players", (res) => {
+        let data = "";
 
-        const players = JSON.parse(raw || "[]");
+        res.on("data", chunk => data += chunk);
 
-        console.log("\n--- CURRENT PLAYERS ---");
+        res.on("end", () => {
+            const players = JSON.parse(data);
 
-        if (!players.length) {
-            console.log("No players online.");
-            return;
-        }
+            console.log("\n--- CURRENT PLAYERS ---");
 
-        for (const p of players) {
-            console.log(`${p.ip} | ${p.name}`);
-        }
-    } catch (err: any) {
-        console.log("Failed to load players:", err?.message || String(err));
-    }
+            if (players.length === 0) {
+                console.log("No players online.");
+                return;
+            }
+
+            for (const p of players) {
+                console.log(`${p.ip} | ${p.name}`);
+            }
+        });
+    });
 }
 
 let games: GameServer[] = [];

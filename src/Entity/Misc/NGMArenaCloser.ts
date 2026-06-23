@@ -56,7 +56,7 @@ export default class ArenaCloser extends TankBody {
 
         const def = (this.definition = Object.assign({}, this.definition));
         def.maxHealth = 10000;
-        def.speed = 0.75; // Keep speed constant, independent of level
+        def.speed = 1; // Keep speed constant, independent of level
 
         this.damagePerTick = 196;
 

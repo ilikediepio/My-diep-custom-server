@@ -4,34 +4,6 @@ import path from "path";
 import type GameServer from "../src/Game";
 import { liveClients } from "../src/Globals";
 
-import http from "http";
-import { execFileSync } from "child_process";
-
-function listPlayers() {
-    try {
-        const raw = execFileSync(
-            "curl",
-            ["-s", "http://localhost:8080/api/players"],
-            { encoding: "utf8" }
-        ).trim();
-
-        const players = JSON.parse(raw || "[]");
-
-        console.log("\n--- CURRENT PLAYERS ---");
-
-        if (!players.length) {
-            console.log("No players online.");
-            return;
-        }
-
-        for (const p of players) {
-            console.log(`${p.ip} | ${p.name}`);
-        }
-    } catch (err: any) {
-        console.log("Failed to load players:", err?.message || String(err));
-    }
-}
-
 let games: GameServer[] = [];
 
 type LogEntry = {
@@ -61,7 +33,7 @@ const FROZE_FILE = path.join(BASE, "frozen.json");
 // =========================
 
 export function startCLI(g: GameServer[] = []) {
-    console.log("STARTCLI CALLED");
+    console.log("startCLI called");
     console.log("received", g.length, "servers");
 
     games = g;
@@ -326,30 +298,30 @@ function listRecent(hours: number) {
     }
 }
 
-//function listPlayers() {
-//    console.log("\n--- CURRENT PLAYERS ---");
-//
-//    if (liveClients.size === 0) {
-//        console.log("No players currently online.");
-//        return;
-//    }
-//
-//    let totalPlayers = 0;
-//
-//    for (const c of liveClients) {
-//        const ip = c.ws?.getUserData().ipAddress;
-//        if (!ip) continue;
-//
-//        const name =
-//            c.camera?.cameraData?.player?.nameData?.values.name ||
-//            "Unnamed";
-//
-//        console.log(`${canonicalIP(ip)} | ${name}`);
-//        totalPlayers++;
-//    }
-//
-//    console.log(`\nTotal Players: ${totalPlayers}`);
-//}
+function listPlayers() {
+    console.log("\n--- CURRENT PLAYERS ---");
+
+    if (liveClients.size === 0) {
+        console.log("No players currently online.");
+        return;
+    }
+
+    let totalPlayers = 0;
+
+    for (const c of liveClients) {
+        const ip = c.ws?.getUserData().ipAddress;
+        if (!ip) continue;
+
+        const name =
+            c.camera?.cameraData?.player?.nameData?.values.name ||
+            "Unnamed";
+
+        console.log(`${canonicalIP(ip)} | ${name}`);
+        totalPlayers++;
+    }
+
+    console.log(`\nTotal Players: ${totalPlayers}`);
+}
 
 function listRepeatedConnections(threshold = 200, hours = 24) {
     const logs = load(LOG_FILE) as LogEntry[];
@@ -430,6 +402,11 @@ function menu() {
         }
 
         case "5": {
+            if (games.length === 0) {
+                console.log("❌ No game servers attached");
+                break;
+            }
+        
             listPlayers();
             break;
         }
