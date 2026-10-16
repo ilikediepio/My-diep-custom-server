@@ -16,7 +16,7 @@
     along with this program. If not, see <https://www.gnu.org/licenses/>
 */
 
-import { Color, NameFlags, StyleFlags, AdminFlags, Tank } from "../../Const/Enums";
+import { Color, NameFlags, StyleFlags, AdminFlags, PhysicsFlags, Tank } from "../../Const/Enums";
 import ArenaEntity from "../../Native/Arena";
 import { CameraEntity } from "../../Native/Camera";
 import { AI, AIState, Inputs } from "../AI";
@@ -59,6 +59,7 @@ export default class Dominator extends TankBody {
 
         this.relationsData.values.team = arena;
         this.physicsData.values.size = Dominator.SIZE;
+        this.physicsData.values.flags |= PhysicsFlags.fixedSize;
         // TODO(ABC):
         // Add setTeam method for this
         this.styleData.values.color = Color.Neutral;

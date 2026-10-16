@@ -81,6 +81,7 @@ import CrocSkimmer from "./Projectile/CrocSkimmer";
 import { BarrelAddon, BarrelAddonById } from "./BarrelAddons";
 import { Swarm } from "./Projectile/Swarm";
 import NecromancerSquare from "./Projectile/NecromancerSquare";
+import GhostWall from "../Misc/Visual/GhostWall";
 
 import DamageZone1 from "../Misc/DZ/DamageZone1";
 import DamageZone2 from "../Misc/DZ/DamageZone2";
@@ -106,6 +107,46 @@ import Crasher from "../Shape/Crasher";
 import XPSquare from "../Shape/Level45Giver";
 // for shiny set false to true here: const shape = new Shape(this.game, false);
 
+// visual effects for build mode
+const GHOST_WALL_SIZES : Record<number, number> = {
+    // Maze walls
+    264: 50,
+    265 : 100,
+    266 : 200,
+    267 : 400,
+    268 : 800,
+
+    // Small damage zones
+    269 : 50,
+    283 : 50,
+    284 : 50,
+    285 : 50,
+    286 : 50,
+    287 : 50,
+    288 : 50,
+    289 : 50,
+    290 : 50,
+    291 : 50,
+    292 : 50,
+    293 : 50,
+    325 : 50,
+
+    // Normal damage zones
+    270 : 200,
+    271 : 200,
+    272 : 200,
+    273 : 200,
+    274 : 200,
+    275 : 200,
+    276 : 200,
+    277 : 200,
+    278 : 200,
+    279 : 200,
+    280 : 200,
+    282 : 200,
+    324 : 200
+};
+
 /**
  * Class that determines when barrels can shoot, and when they can't.
  */
@@ -116,6 +157,56 @@ export class ShootCycle {
     private pos: number;
     /** The last known reload time of the barrel. */
     private reloadTime: number;
+    // visual effects for build mode
+    private ghostWall: GhostWall | null = null;
+    private ghostWallSize: number | null = null;
+    private ghostWallDebugLastLog = 0;
+    private ghostWallDebugKey: string = "";
+
+
+    // visual effects for build mode
+    private updateGhostWall() {
+        const tank = this.barrelEntity.tank as any;
+        const tankId = tank.definition ?.id;
+        const size = GHOST_WALL_SIZES[tankId];
+
+        // This tank doesn't use a building preview
+        if (size === undefined) {
+            if (this.ghostWall) {
+                this.ghostWall.delete();
+                this.ghostWall = null;
+                this.ghostWallSize = null;
+            }
+
+            return;
+        }
+
+        const mouseX = this.barrelEntity.tank.inputs.mouse.x;
+        const mouseY = this.barrelEntity.tank.inputs.mouse.y;
+
+        const x = Math.round(mouseX / size) * size + size / 2;
+        const y = Math.round(mouseY / size) * size + size / 2;
+
+        if (!this.ghostWall || this.ghostWallSize !== size) {
+            if (this.ghostWall) {
+                this.ghostWall.delete();
+            }
+
+            this.ghostWall = new GhostWall(
+                this.barrelEntity.game,
+                x,
+                y,
+                size,
+                size,
+                this.barrelEntity.tank
+            );
+
+            this.ghostWallSize = size;
+            return;
+        }
+
+        this.ghostWall.setPosition(x, y);
+    }
 
     public constructor(barrel: Barrel) {
         this.barrelEntity = barrel;
@@ -129,6 +220,8 @@ export class ShootCycle {
             this.pos *= reloadTime / this.reloadTime;
             this.reloadTime = reloadTime;
         }
+
+        this.updateGhostWall();
 
         const alwaysShoot = (this.barrelEntity.definition.forceFire) || (this.barrelEntity.definition.bullet.type === 'drone') || (this.barrelEntity.definition.bullet.type === 'minion') || (this.barrelEntity.definition.bullet.type === 'bossminion');
 
@@ -253,8 +346,11 @@ case 'bullet': {
         bullet.positionData.flags |= PositionFlags.canMoveThroughWalls;
     }
 
-    // Disable wall phasing for ATMG
-    if (tankDefinition?.id === Tank.Atmg) {
+    // Disable wall phasing for ATMG and ObbyObstacle1
+    if (
+        tankDefinition?.id === Tank.Atmg ||
+        tankDefinition?.id === Tank.ObbyObsticle1
+    ) {
         bullet.positionData.flags &= ~PositionFlags.canMoveThroughWalls;
     }
 

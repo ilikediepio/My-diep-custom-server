@@ -326,31 +326,6 @@ function listRecent(hours: number) {
     }
 }
 
-//function listPlayers() {
-//    console.log("\n--- CURRENT PLAYERS ---");
-//
-//    if (liveClients.size === 0) {
-//        console.log("No players currently online.");
-//        return;
-//    }
-//
-//    let totalPlayers = 0;
-//
-//    for (const c of liveClients) {
-//        const ip = c.ws?.getUserData().ipAddress;
-//        if (!ip) continue;
-//
-//        const name =
-//            c.camera?.cameraData?.player?.nameData?.values.name ||
-//            "Unnamed";
-//
-//        console.log(`${canonicalIP(ip)} | ${name}`);
-//        totalPlayers++;
-//    }
-//
-//    console.log(`\nTotal Players: ${totalPlayers}`);
-//}
-
 function listRepeatedConnections(threshold = 200, hours = 24) {
     const logs = load(LOG_FILE) as LogEntry[];
     const cutoff = now() - hours * 3600 * 1000;
@@ -360,7 +335,7 @@ function listRepeatedConnections(threshold = 200, hours = 24) {
     for (const l of logs) {
         if (!l || typeof l.time !== "number" || l.time < cutoff) continue;
 
-        const ip = canonicalIP(readline.question("IP: "));
+        const ip = canonicalIP(l.ip);
         counts.set(ip, (counts.get(ip) || 0) + 1);
     }
 
@@ -390,6 +365,73 @@ function listRepeatedConnections(threshold = 200, hours = 24) {
     }
 }
 
+function toggleLagProtection() {
+    const servers = [
+        "sandbox",
+        "domtest",
+        "ball",
+        "atmg",
+        "nexus",
+        "seige",
+        "blackhole",
+        "events",
+        "pvp"
+    ];
+
+    let serverState: any[] = [];
+
+    try {
+        const raw = execFileSync(
+            "curl",
+            ["-s", "http://localhost:8080/api/servers"],
+            { encoding: "utf8" }
+        ).toString();
+
+        serverState = JSON.parse(raw);
+    } catch (err) {
+        console.log("Failed to load server states:", err);
+        return;
+    }
+
+    console.log("\nAvailable servers:");
+
+    servers.forEach((name, i) => {
+        const game = serverState.find(g => g.gamemode === name);
+        const state = game?.lagProtectionEnabled ? "ON" : "OFF";
+
+        console.log(`${i + 1}. ${name} (${state})`);
+    });
+
+    const index = parseInt(readline.question("Server number: "), 10) - 1;
+
+    if (index < 0 || index >= servers.length) {
+        console.log("Invalid server.");
+        return;
+    }
+
+    const gamemode = servers[index];
+
+    try {
+        const url = `http://localhost:8080/api/toggle-lag?gamemode=${encodeURIComponent(gamemode)}`;
+
+        const response = execFileSync(
+            "curl",
+            ["-s", url],
+            { encoding: "utf8" }
+        ).toString().trim();
+
+        const result = JSON.parse(response);
+
+        console.log(
+            `Lag protection for ${result.gamemode}: ` +
+            `${result.lagProtectionEnabled ? "ENABLED" : "DISABLED"}`
+        );
+
+    } catch (err: any) {
+        console.log("Failed to toggle lag protection:", err?.message || String(err));
+    }
+}
+
 // =========================
 // MENU
 // =========================
@@ -402,7 +444,8 @@ function menu() {
     console.log("5. List players");
     console.log("6. Flag repeated connections");
     console.log("7. Freeze an IP (prevents commands + input)");
-    console.log("8. Exit");
+    console.log("8. Toggle lag protection for a single server");
+    console.log("9. Exit");
 
     const choice = readline.question("\nSelect: ");
 
@@ -447,7 +490,12 @@ function menu() {
             break;
         }
 
-        case "8":
+        case "8": {
+            toggleLagProtection();
+            break;
+        }
+
+        case "9":
             process.exit(0);
             break;
 

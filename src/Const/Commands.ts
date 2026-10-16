@@ -88,6 +88,10 @@ import { bannedClients } from "../index";
 import DebugEntity from "../Entity/Misc/DebugEntity";
 
 
+export const SHINY_PASSWORD = process.env.SHINY_PASSWORD;
+export const SHINY_PLUS_PASSWORD = process.env.SHINY_PLUS_PASSWORD;
+export const MOD_BAN_PASSWORD = process.env.MOD_BAN_PASSWORD;
+
 const RELATIVE_POS_REGEX = new RegExp(/~(-?\d+)?/);
 const spawnCooldowns = new WeakMap<Client, Map<SpawnCategory, number>>();
 const SPAWN_COOLDOWN_MS = 2000; // 2 second cooldown per category per player
@@ -179,6 +183,7 @@ export const enum CommandID {
     gameSetStatMax = "game_set_stat_max",
     br = "br",
     dbr = "dbr",
+    ddbr = "ddbr",
     gameAddUpgradePoints = "game_add_upgrade_points",
     gameTP = "game_tp",
     gameTPPlayer = "game_tp_player",
@@ -224,6 +229,7 @@ export const enum CommandID {
     adminBanlist = "admin_banlist",
     adminKick = "admin_kick",
     fastKick = "fast_kick",
+    modBan = "mod_ban",
 }
 
 export interface CommandDefinition {
@@ -341,10 +347,21 @@ export const commandDefinitions = {
     dbr: {
         id: CommandID.dbr,
         usage: "[message]",
-        description: "Broadcasts a message to the whole server, only the dev can use it",
+        description: "Broadcasts a message to the whole server, only admins can use it",
         permissionLevel: AccessLevel.FullAccess,
         isCheat: false,
         execute(client: Client, game: GameServer, ...args: string[]) {
+        const message = args.join(" ").trim();
+        if (!message) return;
+        },
+    },
+    ddbr: {
+    id: CommandID.ddbr,
+        usage : "[message] [password]",
+        description : "Broadcasts a message to the whole server, only the dev can use it, requieres password",
+        permissionLevel : AccessLevel.PublicAccess,
+        isCheat : false,
+        execute(client : Client, game : GameServer, ...args : string[]) {
         const message = args.join(" ").trim();
         if (!message) return;
         },
@@ -478,7 +495,8 @@ export const commandDefinitions = {
     },
     admin_shiny_all: {
         id: CommandID.adminShinyAll,
-        description: "Sets everyones tank to shiny",
+        usage: "[shiny+ password]",
+        description: "Sets everyones tank to shiny (only level 3 access can do this)",
         permissionLevel: AccessLevel.FullAccess,
         isCheat: false
     },
@@ -546,7 +564,7 @@ export const commandDefinitions = {
     },
     admin_shiny_player: {
         id: CommandID.adminShinyPlayer,
-        usage: "[player name]",
+        usage: "[player name], [shiny+ password]",
         description: "Sets someone's tank to shiny",
         permissionLevel: AccessLevel.FullAccess,
         isCheat: true
@@ -605,6 +623,13 @@ export const commandDefinitions = {
         permissionLevel: AccessLevel.FullAccess,
         isCheat: false
     },
+    mod_ban: {
+        id: CommandID.modBan,
+        usage: "[player IP]",
+        description: "Kicks a player from the game",
+        permissionLevel: AccessLevel.FullAccess,
+        isCheat: false
+    },
 
 } as Record<CommandID, CommandDefinition>
 
@@ -617,19 +642,47 @@ export const commandCallbacks = {
         player.setTank(tankDef.id);
     },
     game_set_level: (client: Client, levelArg: string) => {
-        const level = parseInt(levelArg);
+        const level = Number(levelArg);
+    
         const player = client.camera?.cameraData.player;
-        if (isNaN(level) || !Entity.exists(player) || !(player instanceof TankBody)) return;
-        const finalLevel = client.accessLevel == AccessLevel.BetaAccess ? level : Math.min(maxPlayerLevel, level);
+    
+        if (
+            !Number.isSafeInteger(level) ||
+            level < 0 ||
+            !Entity.exists(player) ||
+            !(player instanceof TankBody)
+        ) return;
+    
+        const finalLevel =
+            client.accessLevel == AccessLevel.BetaAccess
+                ? level
+                : Math.min(maxPlayerLevel, level);
+    
         client.camera?.setLevel(finalLevel);
     },
+    //game_set_score: (client: Client, scoreArg: string) => {
+    //    const score = parseInt(scoreArg);
+    //    const camera = client.camera?.cameraData;
+    //    const player = client.camera?.cameraData.player;
+    //    if (isNaN(score) || score > Number.MAX_SAFE_INTEGER || score < Number.MIN_SAFE_INTEGER || !Entity.exists(player) || !(player instanceof TankBody) || !camera) return;
+    //    camera.score = score;
+    //},
     game_set_score: (client: Client, scoreArg: string) => {
-        const score = parseInt(scoreArg);
-        const camera = client.camera?.cameraData;
-        const player = client.camera?.cameraData.player;
-        if (isNaN(score) || score > Number.MAX_SAFE_INTEGER || score < Number.MIN_SAFE_INTEGER || !Entity.exists(player) || !(player instanceof TankBody) || !camera) return;
-        camera.score = score;
-    },
+    const score = Number(scoreArg);
+
+    const camera = client.camera?.cameraData;
+    const player = camera?.player;
+
+    if (
+        !Number.isSafeInteger(score) ||
+        score < 0 ||
+        !camera ||
+        !Entity.exists(player) ||
+        !(player instanceof TankBody)
+    ) return;
+
+    camera.score = score;
+},
 br: (client: Client, ...args: string[]) => {
     if (!client.chatToggled) return;
 
@@ -681,7 +734,26 @@ br: (client: Client, ...args: string[]) => {
 
     console.log(`${client.toString()} broadcasted: ${message}`);
 },
-dbr: (client: Client, ...args: string[]) => {
+dbr: (client: Client, ...args : string[]) => {
+    if (!client.chatToggled) return;
+
+    // ======= Cooldown check =======
+    const now = Date.now();
+    const cooldown = 1000;
+    const lastChatTime = (client as any).lastChatTime ?? 0;
+
+    if (now - lastChatTime < cooldown) {
+        const remaining = Math.ceil((cooldown - (now - lastChatTime)) / 1000);
+        client.notify(
+            `Please wait ${ remaining }s before sending another message.`,
+            0xFF0000,
+            1500
+        );
+        return;
+    }
+
+    (client as any).lastChatTime = now;
+
     // ======= Build message =======
     const message = args.join(" ").trim();
     if (!message) return;
@@ -689,27 +761,82 @@ dbr: (client: Client, ...args: string[]) => {
     // ======= Get sender name =======
     const raw = client.toString();
     const match = raw.match(/name="([^"]+)"/);
-    const senderName = match?.[1] ?? "Developer";
+        const senderName = match ?.[1] ?? "Player";
 
-    // ======= Duration scaling (same as br) =======
-    const base = 2000;
-    const max = 10000;
-    const growth = 2500;
+    // ======= Message duration scaling =======
+    const base = 4000;
+    const max = 20000;
+    const growth = 3000;
     const lengthFactor = Math.log2(message.length + 1);
-    const duration = Math.min(max, Math.max(base, base + growth * lengthFactor));
 
-    // ======= Send broadcast (BLUE) =======
+    const duration = Math.min(
+        max,
+        Math.max(base, base + growth * lengthFactor)
+    );
+
+    // ======= Broadcast =======
     client.game?.broadcast()
         .u8(ClientBound.Notification)
-        .stringNT(`[DEV] ${senderName}: ${message}`)
-        .u32(0x3399FF)
-        .float(duration)
-        .stringNT("")
-        .send();
+        .stringNT(`${senderName}: ${ message }`)
+            .u32(0x0000FF)
+            .float(duration)
+            .stringNT("")
+            .send();
 
-    console.log(`[DEV BROADCAST] ${client.toString()}: ${message}`);
+    console.log(`${client.toString()} (admin) broadcasted: ${ message }`);
 },
-whisper: (client: Client, targetName: string, ...args: string[]) => {
+ddbr: (client: Client, ...args : string[]) => {
+    if (!client.chatToggled) return;
+
+    // ======= Cooldown check =======
+    const now = Date.now();
+    const cooldown = 100;
+    const lastChatTime = (client as any).lastChatTime ?? 0;
+
+    if (now - lastChatTime < cooldown) {
+        const remaining = Math.ceil((cooldown - (now - lastChatTime)) / 1000);
+        client.notify(
+            `Please wait ${ remaining }s before sending another message.`,
+            0xFF0000,
+            1000
+        );
+        return;
+    }
+
+    (client as any).lastChatTime = now;
+
+    // ======= Build message =======
+    const message = args.join(" ").trim();
+    if (!message) return;
+
+    // ======= Get sender name =======
+    const raw = client.toString();
+    const match = raw.match(/ name = "([^"] + )"/);
+        const senderName = match ?.[1] ?? "Dev";
+
+    // ======= Message duration scaling =======
+    const base = 5000;
+    const max = 25000;
+    const growth = 3000;
+    const lengthFactor = Math.log2(message.length + 1);
+
+    const duration = Math.min(
+        max,
+        Math.max(base, base + growth * lengthFactor)
+    );
+
+    // ======= Broadcast =======
+    client.game?.broadcast()
+        .u8(ClientBound.Notification)
+        .stringNT(`${senderName}: ${ message }`)
+            .u32(0x00FF00)
+            .float(duration)
+            .stringNT("")
+            .send();
+
+    console.log(`${client.toString()} (dev) broadcasted: ${ message }`);
+},
+whisper: (client: Client, targetName: string, ...args: string[]) => { // broken, pls fix by removing the filter as it is glichy and won't work anyway
     if (!client.chatToggled) return;
 
     // ======= Cooldown check =======
@@ -1444,6 +1571,60 @@ fast_kick: (client: Client, ...args: string[]) => {
         .send();
 },
 
+mod_ban: (client: Client, ...args: string[]) => {
+    const game = client.game;
+    if (!game) return;
+
+    const ip = args[0];
+    if (!ip) {
+        console.log("Usage: [player IP]");
+        return;
+    }
+
+    let kickedCount = 0;
+    const kickedNames: string[] = [];
+
+    for (const c of game.clients) {
+        const clientIP = c.ws?.getUserData?.().ipAddress;
+
+        if (clientIP === ip) {
+            if (c.accessLevel === AccessLevel.FullAccess) continue;
+
+            try {
+                const raw = c.toString();
+                const match = raw.match(/name="([^"]+)"/);
+                const name = match?.[1] ?? "Unknown";
+
+                kickedNames.push(name);
+
+                c.ws?.end?.(1000, "Kicked");
+                c.ws?.close?.();
+
+                kickedCount++;
+            } catch (err) {
+                console.log("Kick error:", err);
+            }
+        }
+    }
+
+    console.log(`Kicked ${kickedCount} client(s) with IP ${ip}`);
+
+    const message =
+        kickedNames.length === 1
+            ? `${kickedNames[0]} has been kicked!`
+            : kickedNames.length > 1
+                ? `${kickedNames.join(", ")} have been kicked!`
+                : "No players were kicked.";
+
+    game.broadcast()
+        .u8(ClientBound.Notification)
+        .stringNT(message)
+        .u32(0xFF8800)
+        .float(4000)
+        .stringNT("")
+        .send();
+},
+
     admin_summon: (client: Client, entityArg: string, countArg?: string, xArg?: string, yArg?: string) => {
         const count = countArg ? parseInt(countArg) : 1;
         let x = parseInt(xArg || "0", 10);
@@ -1517,14 +1698,13 @@ const entityMap = new Map<string, new (...args: any[]) => ObjectEntity>([
     ["sapen", ShinyAlphaPentagon],
     ["sahex", ShinyAlphaHexagon],
     ["scr", ShinyCrasher],
-    ["ball", Ball],
     ["fcr", FallenCrasher],
     ["l45", XPSquare],
     ["fd", FallenDodger],
-    ["efd", EnragedFallenDodger], // herere
-    ["xau", xAura],
-//    ["wl", Wall], very bugged
-//    ["bwl", BounceWall], very bugged
+    ["efd", EnragedFallenDodger],
+    ["ball", Ball],
+//    ["wl", Wall], very bugged, make super_admin instead of admin
+//    ["bwl", BounceWall], very bugged, make super_admin instead of admin
 ]);
 
 const TEntity = entityMap.get(entityArg);
@@ -1722,27 +1902,30 @@ shiny_claim: (caller: Client, password?: string) => {
     }
 
     // Check password and apply the correct tank
-    if (password === "1234") {
+    if (password === SHINY_PASSWORD) {
         tank.setTank(Tank.Shiny);
         caller.notify("You have claimed the Shiny tank!", 0x3BB143, 4000);
-    } else if (password === "4321") {
+    }
+    else if (password === SHINY_PLUS_PASSWORD) {
         tank.setTank(Tank.ShinyPlus);
         caller.notify("You have claimed the Shiny+ tank!", 0x3BB143, 4000);
-    } else {
+    }
+    else {
         caller.notify("Invalid password.", 0xD30000, 4000);
     }
 },
-admin_shiny_all: (caller: Client) => {
+admin_shiny_all: (caller: Client, password?: string) => {
     const game = caller.game;
     if (!game) return; // safety check
-
-    for (const client of game.clients) {
+    if (password === SHINY_PLUS_PASSWORD) {
+        for (const client of game.clients) {
         const tank = client.camera?.cameraData?.player;
         if (tank && tank instanceof TankBody) {
             tank.setTank(Tank.Shiny);
             client.notify("Your tank has been set to Shiny!", 0xFFD700, 5000);
-        }
-    }
+         }
+      }
+   }
 },
     super_admin_close_server: (client: Client) => {
         client?.camera?.game.arena.serverClose();
@@ -1998,9 +2181,11 @@ admin_promote_player: (client: Client, targetName: string) => {
         console.log(`${client.toString()} promoted ${target.toString()}`);
     }
 },
-admin_shiny_player: (caller: Client, targetName: string) => {
+admin_shiny_player: (caller: Client, targetName: string, password?: string) => {
     const game = caller.game;
     if (!game) return;
+
+    if (password === SHINY_PLUS_PASSWORD) {
 
     const targets = findClientsByName(game, targetName);
     if (targets.length === 0) return;
@@ -2010,8 +2195,9 @@ admin_shiny_player: (caller: Client, targetName: string) => {
 
         if (tank instanceof TankBody) {
             tank.setTank(Tank.Shiny);
-            target.notify("Your tank has been set to Shiny!", 0xFFD700, 5000);
+            target.notify("Your tank has been set to Shiny by someone!", 0xFFD700, 5000);
             console.log(`${caller.toString()} made ${target.toString()} Shiny`);
+            }
         }
     }
 },

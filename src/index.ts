@@ -79,6 +79,7 @@ if (conns >= config.connectionsPerIp) {
         if (!game) {
             return ws.close();
         }
+        console.log("TOGGLING:", game.gamemode, game.lagProtectionEnabled); //qqqq
         const client = new Client(ws, game);
         allClients.add(client);
         liveClients.add(client);
@@ -114,13 +115,6 @@ case "/tanks": {
 
                 res.writeStatus("200 OK").end(JSON.stringify(TankDefinitions));
                 return;
-    //const data = JSON.stringify(TankDefinitions);
-
-    //res.writeStatus("200 OK");
-    //res.writeHeader("Content-Type", "application/json; charset=utf-8");
-    //res.writeHeader("Connection", "close");
-
-    //return res.end(data);
 }
 
 app.get("/api/players", (res) => {
@@ -142,8 +136,39 @@ app.get("/api/players", (res) => {
 });
 
             case "/servers":
-                res.writeStatus("200 OK").end(JSON.stringify(games.map(({ gamemode, name }) => ({ gamemode, name }))));
+                res.writeStatus("200 OK").end(
+                    JSON.stringify(
+                        games.map(game => ({
+                            gamemode: game.gamemode,
+                            name: game.name,
+                            lagProtectionEnabled: game.lagProtectionEnabled
+                        }))
+                    )
+                );
                 return;
+            case "/toggle-lag": {
+                const gamemode = new URLSearchParams(req.getQuery()).get("gamemode");
+            
+                if (!gamemode) {
+                    res.writeStatus("400 Bad Request").end("Missing gamemode");
+                    return;
+                }
+            
+                const game = games.find(g => g.gamemode === gamemode);
+            
+                if (!game) {
+                    res.writeStatus("404 Not Found").end("Game not found");
+                    return;
+                }
+            
+                game.lagProtectionEnabled = !game.lagProtectionEnabled;
+            
+                res.writeStatus("200 OK").end(JSON.stringify({
+                    gamemode: game.gamemode,
+                    lagProtectionEnabled: game.lagProtectionEnabled
+                }));
+                return;
+            }
             case "/commands":
                 res.writeStatus("200 OK").end(JSON.stringify(config.enableCommands ? Object.values(commandDefinitions) : []));
                 return;
@@ -173,6 +198,7 @@ app.get("/api/players", (res) => {
 }
         }
     }
+
 
     if (ENABLE_CLIENT) {
         let file: string | null = null;
@@ -212,6 +238,11 @@ app.get("/api/players", (res) => {
     } 
 });
 
+                            console.log("SERVERS:", games.map(g => ({
+    gm: g.gamemode,
+    lag: g.lagProtectionEnabled
+})));
+
 app.listen(PORT, (success) => {
     if (!success) throw new Error("Server failed");
 
@@ -240,24 +271,26 @@ app.listen(PORT, (success) => {
     const sie = new GameServer("seige", "Siege");     // opening day mode
     const bho = new GameServer("blackhole", "BlackHole");
     const eve = new GameServer("events", "Events");
-let pvp;
+    const pvp = new GameServer("pvp", "PvP");
+    const oby = new GameServer("obby", "Obby");
+//let pvp;
 
-try {
+//try {
     //console.log("Creating PvP...");
-    pvp = new GameServer("pvp", "PvP");
+//    pvp = new GameServer("pvp", "PvP");
     //console.log("PvP created successfully");
-} catch (err) {
-    console.error("PVP FAILED:", err);
-}
-    if (pvp) {
+//} catch (err) {
+//    console.error("PVP FAILED:", err);
+//}
+    //if (pvp) {
     games.push(
-        sbx, dot, bal, atm, nex, sie, bho, eve, pvp
+        sbx, dot, bal, atm, nex, sie, bho, eve, pvp, oby
     );
-} //else {
+//} //else {
   //  games.push(
   //      ffa, sbx, te2, te4, mot, dom, maz, tes,
   //      spi, dot, jun, fac, bal, ace, bar, atm,
-  //      nex, sie, bho, eve, pvp
+  //      nex, sie, bho, eve, pvp, oby
   //  );
 //}
 console.log("ENABLE_CLI =", process.env.ENABLE_CLI);

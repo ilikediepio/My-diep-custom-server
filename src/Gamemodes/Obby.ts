@@ -1,0 +1,1605 @@
+/*
+    DiepCustom - custom tank game server that shares diep.io's WebSocket protocol
+    Copyright (C) 2022 ABCxFF (github.com/ABCxFF)
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published
+    by the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program. If not, see <https://www.gnu.org/licenses/>
+*/
+
+import GameServer from "../Game";
+import ArenaEntity from "../Native/Arena";
+import Client from "../Client";
+
+import TeamBase from "../Entity/Misc/TeamBase";
+import TankBody from "../Entity/Tank/TankBody";
+import GoodLuck from "../Entity/Misc/GoodLuck";
+import ObbyObsticle1 from "../Entity/Misc/ObbyObsticle1";
+import ObbyObsticle2 from "../Entity/Misc/ObbyObsticle2";
+import ObbyObsticle3 from "../Entity/Misc/ObbyObsticle3";
+import ObbyObsticle4 from "../Entity/Misc/ObbyObsticle4";
+import Wall from "../Entity/Misc/MazeWall";
+import Ball from "../Entity/Misc/Ball";
+import DamageZone1 from "../Entity/Misc/DZ/DamageZone1";
+import DamageZone2 from "../Entity/Misc/DZ/DamageZone2";
+import DamageZone3 from "../Entity/Misc/DZ/DamageZone3";
+import DamageZone4 from "../Entity/Misc/DZ/DamageZone4";
+import DamageZone5 from "../Entity/Misc/DZ/DamageZone5";
+import DamageZone6 from "../Entity/Misc/DZ/DamageZone6";
+import DamageZone7 from "../Entity/Misc/DZ/DamageZone7";
+import DamageZone8 from "../Entity/Misc/DZ/DamageZone8";
+import DamageZone9 from "../Entity/Misc/DZ/DamageZone9";
+import DamageZone10 from "../Entity/Misc/DZ/DamageZone10";
+import DamageZoneY from "../Entity/Misc/DZ/DamageZoneY";
+import TankSetter from "../Entity/Misc/DZ/TankSetter";
+import InvisTankSetter from "../Entity/Misc/DZ/InvisTankSetter";
+
+import { TeamEntity } from "../Entity/Misc/TeamEntity";
+import { Color, ArenaFlags, Tank } from "../Const/Enums";
+import ShapeManager from "../Entity/Shape/Manager";
+
+const arenaSize = 15000; // change to fit map once done
+const baseSize = 2000;
+
+class ZeroShapeManager extends ShapeManager {
+    public constructor(arena: ArenaEntity) {
+        super(arena); // Call parent constructor
+    }
+
+    protected get wantedShapes() {
+        return 0;
+    }
+} // This closing brace was missing (try and remember next time!)
+
+/**
+ * Custom Arena with center base and guardian
+ */
+export default class ObbyArena extends ArenaEntity {
+    protected shapes: ShapeManager = new ZeroShapeManager(this);
+    /** Blue Team Base */
+    public blueTeamBase: TeamBase;
+    /** BaseGuardian and ATMG entities */
+    public GoodLuck!: GoodLuck;
+    public ObbyObsticle!: ObbyObsticle1;
+    // Wall Entity and damage zones
+    public Wall: Wall;
+
+    /** Maps clients to their teams */
+    public playerTeamMap: Map<Client, TeamBase> = new Map();
+
+    public constructor(game: GameServer) {
+        super(game);
+
+        // Set arena size
+        this.updateBounds(arenaSize * 2, arenaSize * 2);
+
+        // Spawn Blue base at center (0, 0)
+        this.blueTeamBase = new TeamBase(
+            game,
+            new TeamEntity(this.game, Color.TeamBlue),
+            0, 0, // Center of the map
+            baseSize,
+            baseSize
+        );
+
+        // Spawn Notice
+
+        const goodluck = new GoodLuck(this.game);
+        goodluck.relationsData.values.team = this.blueTeamBase.relationsData.values.team;
+        goodluck.positionData.values.x = 0;
+        goodluck.positionData.values.y = 0;
+        this.GoodLuck = goodluck;
+
+        // easy obby
+
+        const obbyobsticle1 = new ObbyObsticle1(this.game);
+        obbyobsticle1.relationsData.values.team = null;
+        obbyobsticle1.positionData.values.x = 2200;
+        obbyobsticle1.positionData.values.y = 2400;
+        this.ObbyObsticle = obbyobsticle1;
+
+        const obbyobsticle2 = new ObbyObsticle1(this.game);
+        obbyobsticle2.relationsData.values.team = null;
+        obbyobsticle2.positionData.values.x = 2200;
+        obbyobsticle2.positionData.values.y = 3400;
+        this.ObbyObsticle = obbyobsticle2;
+
+        const obbyobsticle3 = new ObbyObsticle1(this.game);
+        obbyobsticle3.relationsData.values.team = null;
+        obbyobsticle3.positionData.values.x = 2200;
+        obbyobsticle3.positionData.values.y = 4400;
+        this.ObbyObsticle = obbyobsticle3;
+
+        const obbyobsticle4 = new ObbyObsticle1(this.game);
+        obbyobsticle4.relationsData.values.team = null;
+        obbyobsticle4.positionData.values.x = -2200;
+        obbyobsticle4.positionData.values.y = 2400;
+        this.ObbyObsticle = obbyobsticle4;
+
+        const obbyobsticle5 = new ObbyObsticle1(this.game);
+        obbyobsticle5.relationsData.values.team = null;
+        obbyobsticle5.positionData.values.x = -2200;
+        obbyobsticle5.positionData.values.y = 3400;
+        this.ObbyObsticle = obbyobsticle5;
+
+        const obbyobsticle6 = new ObbyObsticle1(this.game);
+        obbyobsticle6.relationsData.values.team = null;
+        obbyobsticle6.positionData.values.x = -2200;
+        obbyobsticle6.positionData.values.y = 4400;
+        this.ObbyObsticle = obbyobsticle6;
+
+        // hard obby
+
+        const obbyobsticle7 = new ObbyObsticle2(this.game);
+        obbyobsticle7.relationsData.values.team = null;
+        obbyobsticle7.positionData.values.x = 0;
+        obbyobsticle7.positionData.values.y = -3500;
+        this.ObbyObsticle = obbyobsticle7;
+
+        const obbyobsticle8 = new ObbyObsticle3(this.game);
+        obbyobsticle8.relationsData.values.team = null;
+        obbyobsticle8.positionData.values.x = -450;
+        obbyobsticle8.positionData.values.y = -5750;
+        this.ObbyObsticle = obbyobsticle8;
+
+        const obbyobsticle9 = new ObbyObsticle4(this.game);
+        obbyobsticle9.relationsData.values.team = null;
+        obbyobsticle9.positionData.values.x = -450;
+        obbyobsticle9.positionData.values.y = -7850;
+        this.ObbyObsticle = obbyobsticle9;
+
+// easy obby
+
+this.Wall = new Wall(game, -900, 1100, 200, 200);
+this.Wall = new Wall(game, -700, 1100, 200, 200);
+this.Wall = new Wall(game, -500, 1100, 200, 200);
+this.Wall = new Wall(game, 1100, 1100, 200, 200);
+this.Wall = new Wall(game, 900, 1100, 200, 200);
+this.Wall = new Wall(game, 700, 1100, 200, 200);
+this.Wall = new Wall(game, 500, 1100, 200, 200);
+this.Wall = new Wall(game, 1100, 900, 200, 200);
+this.Wall = new Wall(game, 1100, 700, 200, 200);
+this.Wall = new Wall(game, -1100, 1100, 200, 200);
+this.Wall = new Wall(game, -300, 1100, 200, 200);
+this.Wall = new Wall(game, 300, 1100, 200, 200);
+this.Wall = new Wall(game, -1100, 900, 200, 200);
+this.Wall = new Wall(game, -1100, 700, 200, 200);
+this.Wall = new Wall(game, -1100, 500, 200, 200);
+this.Wall = new Wall(game, -1100, 300, 200, 200);
+this.Wall = new Wall(game, -1100, 100, 200, 200);
+this.Wall = new Wall(game, -1100, -100, 200, 200);
+this.Wall = new Wall(game, -1100, -300, 200, 200);
+this.Wall = new Wall(game, -1100, -500, 200, 200);
+this.Wall = new Wall(game, -1100, -700, 200, 200);
+this.Wall = new Wall(game, -1100, -900, 200, 200);
+this.Wall = new Wall(game, 1100, 500, 200, 200);
+this.Wall = new Wall(game, 1100, 300, 200, 200);
+this.Wall = new Wall(game, 1100, 100, 200, 200);
+this.Wall = new Wall(game, 1100, -100, 200, 200);
+this.Wall = new Wall(game, 1100, -300, 200, 200);
+this.Wall = new Wall(game, 1100, -500, 200, 200);
+this.Wall = new Wall(game, 1100, -700, 200, 200);
+this.Wall = new Wall(game, 1100, -900, 200, 200);
+this.Wall = new Wall(game, -1100, -1100, 200, 200);
+this.Wall = new Wall(game, -700, -1100, 200, 200);
+this.Wall = new Wall(game, -900, -1100, 200, 200);
+this.Wall = new Wall(game, -500, -1100, 200, 200);
+this.Wall = new Wall(game, -300, -1100, 200, 200);
+this.Wall = new Wall(game, 300, -1100, 200, 200);
+this.Wall = new Wall(game, 700, -1100, 200, 200);
+this.Wall = new Wall(game, 500, -1100, 200, 200);
+this.Wall = new Wall(game, 900, -1100, 200, 200);
+this.Wall = new Wall(game, 1100, -1100, 200, 200);
+this.Wall = new Wall(game, -125, -1175, 50, 50);
+this.Wall = new Wall(game, -175, -1175, 50, 50);
+this.Wall = new Wall(game, -175, -1125, 50, 50);
+this.Wall = new Wall(game, -175, -1075, 50, 50);
+this.Wall = new Wall(game, -125, -1125, 50, 50);
+this.Wall = new Wall(game, -75, -1175, 50, 50);
+this.Wall = new Wall(game, 175, -1175, 50, 50);
+this.Wall = new Wall(game, 125, -1175, 50, 50);
+this.Wall = new Wall(game, 75, -1175, 50, 50);
+this.Wall = new Wall(game, 125, -1125, 50, 50);
+this.Wall = new Wall(game, 175, -1125, 50, 50);
+this.Wall = new Wall(game, 175, -1075, 50, 50);
+this.Wall = new Wall(game, -1000, 1400, 400, 400);
+this.Wall = new Wall(game, 1000, 1400, 400, 400);
+this.Wall = new Wall(game, -1000, 1800, 400, 400);
+this.Wall = new Wall(game, -1000, 2200, 400, 400);
+this.Wall = new Wall(game, -1000, 2600, 400, 400);
+this.Wall = new Wall(game, 1000, 1800, 400, 400);
+this.Wall = new Wall(game, 1000, 2200, 400, 400);
+this.Wall = new Wall(game, 1000, 2600, 400, 400);
+this.Wall = new Wall(game, -1000, 3000, 400, 400);
+this.Wall = new Wall(game, -1000, 3400, 400, 400);
+this.Wall = new Wall(game, 1000, 3000, 400, 400);
+this.Wall = new Wall(game, 1000, 3400, 400, 400);
+this.Wall = new Wall(game, -600, 3400, 400, 400);
+this.Wall = new Wall(game, 600, 3400, 400, 400);
+this.Wall = new DamageZone8(game, null, -300, 1300, 200, 200, true);
+this.Wall = new DamageZone8(game, null, -300, 1500, 200, 200, true);
+this.Wall = new DamageZone8(game, null, 300, 1300, 200, 200, true);
+this.Wall = new DamageZone8(game, null, 300, 1500, 200, 200, true);
+this.Wall = new DamageZone8(game, null, 300, 1700, 200, 200, true);
+this.Wall = new DamageZone8(game, null, 300, 1900, 200, 200, true);
+this.Wall = new DamageZone8(game, null, 100, 1900, 200, 200, true);
+this.Wall = new DamageZone8(game, null, -100, 1900, 200, 200, true);
+this.Wall = new DamageZone8(game, null, -300, 1900, 200, 200, true);
+this.Wall = new DamageZone8(game, null, -500, 1900, 200, 200, true);
+this.Wall = new DamageZone8(game, null, -600, 1800, 900, 100, true);
+this.Wall = new DamageZone8(game, null, 600, 1800, 900, 100, true);
+this.Wall = new DamageZone8(game, null, -700, 2500, 200, 200, true);
+this.Wall = new DamageZone8(game, null, -500, 2500, 200, 200, true);
+this.Wall = new DamageZone8(game, null, -300, 2300, 200, 200, true);
+this.Wall = new DamageZone8(game, null, -300, 2500, 200, 200, true);
+this.Wall = new DamageZone8(game, null, -100, 2300, 200, 200, true);
+this.Wall = new DamageZone8(game, null, 100, 2300, 200, 200, true);
+this.Wall = new DamageZone8(game, null, 300, 2300, 200, 200, true);
+this.Wall = new DamageZone8(game, null, 500, 2300, 200, 200, true);
+this.Wall = new DamageZone8(game, null, -125, 1325, 50, 50, true);
+this.Wall = new DamageZone8(game, null, 125, 1325, 50, 50, true);
+this.Wall = new DamageZone8(game, null, 700, 2700, 200, 200, true);
+this.Wall = new DamageZone8(game, null, 500, 2700, 200, 200, true);
+this.Wall = new DamageZone8(game, null, 300, 2700, 200, 200, true);
+this.Wall = new DamageZone8(game, null, 100, 2700, 200, 200, true);
+this.Wall = new DamageZone10(game, null, -775, 2975, 50, 50, true);
+this.Wall = new DamageZone10(game, null, -725, 2975, 50, 50, true);
+this.Wall = new DamageZone10(game, null, -675, 2975, 50, 50, true);
+this.Wall = new DamageZone10(game, null, -625, 2975, 50, 50, true);
+this.Wall = new DamageZone10(game, null, -575, 3175, 50, 50, true);
+this.Wall = new DamageZone10(game, null, -575, 3125, 50, 50, true);
+this.Wall = new DamageZone10(game, null, -575, 3075, 50, 50, true);
+this.Wall = new DamageZone10(game, null, -575, 3025, 50, 50, true);
+this.Wall = new DamageZone10(game, null, -575, 2975, 50, 50, true);
+this.Wall = new DamageZone10(game, null, 575, 3175, 50, 50, true);
+this.Wall = new DamageZone10(game, null, 575, 3125, 50, 50, true);
+this.Wall = new DamageZone10(game, null, 575, 3075, 50, 50, true);
+this.Wall = new DamageZone10(game, null, 575, 3025, 50, 50, true);
+this.Wall = new DamageZone10(game, null, 575, 2975, 50, 50, true);
+this.Wall = new DamageZone10(game, null, 775, 2975, 50, 50, true);
+this.Wall = new DamageZone10(game, null, 725, 2975, 50, 50, true);
+this.Wall = new DamageZone10(game, null, 675, 2975, 50, 50, true);
+this.Wall = new DamageZone10(game, null, 625, 2975, 50, 50, true);
+this.Wall = new DamageZone8(game, null, -300, 2700, 200, 200, true);
+this.Wall = new DamageZone8(game, null, -300, 2900, 200, 200, true);
+this.Wall = new DamageZone8(game, null, -300, 3100, 200, 200, true);
+this.Wall = new DamageZone8(game, null, 100, 2900, 200, 200, true);
+this.Wall = new DamageZone8(game, null, 100, 3100, 200, 200, true);
+this.Wall = new DamageZone8(game, null, -25, 2625, 50, 50, true);
+this.Wall = new DamageZone8(game, null, -175, 2825, 50, 50, true);
+this.Wall = new DamageZone8(game, null, -25, 3025, 50, 50, true);
+this.Wall = new DamageZone8(game, null, -175, 3175, 50, 50, true);
+this.Wall = new Wall(game, -300, 3300, 200, 200);
+this.Wall = new Wall(game, -300, 3500, 200, 200);
+this.Wall = new Wall(game, 200, 3400, 400, 400);
+this.Wall = new DamageZone3(game, null, 0, 4400, 1600, 1625, false);
+this.Wall = new Wall(game, -1000, 3800, 400, 400);
+this.Wall = new Wall(game, -1000, 4200, 400, 400);
+this.Wall = new Wall(game, -1000, 4600, 400, 400);
+this.Wall = new Wall(game, 1000, 3800, 400, 400);
+this.Wall = new Wall(game, 1000, 4200, 400, 400);
+this.Wall = new Wall(game, 1000, 4600, 400, 400);
+this.Wall = new Wall(game, -1000, 5000, 400, 400);
+this.Wall = new Wall(game, -1000, 5400, 400, 400);
+this.Wall = new Wall(game, -200, 5400, 400, 400);
+this.Wall = new Wall(game, 200, 5400, 400, 400);
+this.Wall = new Wall(game, 1000, 5400, 400, 400);
+this.Wall = new Wall(game, 1000, 5000, 400, 400);
+this.Wall = new Wall(game, -175, 3575, 50, 50);
+this.Wall = new Wall(game, -25, 3575, 50, 50);
+this.Wall = new Wall(game, 450, 5250, 100, 100);
+this.Wall = new Wall(game, 750, 5250, 100, 100);
+this.Wall = new Wall(game, -750, 5250, 100, 100);
+this.Wall = new Wall(game, -450, 5250, 100, 100);
+this.Wall = new Wall(game, 525, 5225, 50, 50);
+this.Wall = new Wall(game, 525, 5275, 50, 50);
+this.Wall = new Wall(game, 675, 5225, 50, 50);
+this.Wall = new Wall(game, 675, 5275, 50, 50);
+this.Wall = new Wall(game, -675, 5225, 50, 50);
+this.Wall = new Wall(game, -675, 5275, 50, 50);
+this.Wall = new Wall(game, -525, 5225, 50, 50);
+this.Wall = new Wall(game, -525, 5275, 50, 50);
+this.Wall = new Wall(game, -300, 5700, 200, 200);
+this.Wall = new Wall(game, -300, 5900, 200, 200);
+this.Wall = new Wall(game, 300, 5700, 200, 200);
+this.Wall = new Wall(game, 300, 5900, 200, 200);
+this.Wall = new Wall(game, -300, 6100, 200, 200);
+this.Wall = new Wall(game, -300, 6300, 200, 200);
+this.Wall = new Wall(game, -300, 6500, 200, 200);
+this.Wall = new Wall(game, -300, 6700, 200, 200);
+this.Wall = new Wall(game, 300, 6100, 200, 200);
+this.Wall = new Wall(game, 300, 6300, 200, 200);
+this.Wall = new Wall(game, 300, 6500, 200, 200);
+this.Wall = new Wall(game, 300, 6700, 200, 200);
+this.Wall = new Wall(game, -1000, 6200, 400, 400);
+this.Wall = new Wall(game, -1000, 6600, 400, 400);
+this.Wall = new Wall(game, 1000, 6200, 400, 400);
+this.Wall = new Wall(game, 1000, 6600, 400, 400);
+this.Wall = new Wall(game, 1000, 5800, 400, 400);
+this.Wall = new Wall(game, -1000, 5800, 400, 400);
+this.Wall = new DamageZone10(game, null, -675, 5525, 50, 50, true);
+this.Wall = new DamageZone10(game, null, -475, 5675, 50, 50, true);
+this.Wall = new DamageZone10(game, null, -675, 5725, 50, 50, true);
+this.Wall = new DamageZone10(game, null, -575, 5825, 50, 50, true);
+this.Wall = new DamageZone10(game, null, -775, 6025, 50, 50, true);
+this.Wall = new DamageZone10(game, null, -725, 6025, 50, 50, true);
+this.Wall = new DamageZone10(game, null, -525, 6025, 50, 50, true);
+this.Wall = new DamageZone10(game, null, -625, 6175, 50, 50, true);
+this.Wall = new DamageZone10(game, null, -425, 6175, 50, 50, true);
+this.Wall = new DamageZone10(game, null, -425, 6125, 50, 50, true);
+this.Wall = new DamageZone10(game, null, -625, 6225, 50, 50, true);
+this.Wall = new DamageZone10(game, null, -775, 6375, 50, 50, true);
+this.Wall = new DamageZone10(game, null, -475, 6375, 50, 50, true);
+this.Wall = new DamageZone10(game, null, -425, 6375, 50, 50, true);
+this.Wall = new DamageZone10(game, null, -625, 6525, 50, 50, true);
+this.Wall = new DamageZone10(game, null, -475, 6625, 50, 50, true);
+this.Wall = new DamageZone10(game, null, -675, 6725, 50, 50, true);
+this.Wall = new DamageZone3(game, null, 500, 5500, 200, 200, true);
+this.Wall = new DamageZone3(game, null, 700, 5500, 200, 200, true);
+this.Wall = new DamageZone3(game, null, 500, 5700, 200, 200, true);
+this.Wall = new DamageZone3(game, null, 700, 5700, 200, 200, true);
+this.Wall = new DamageZone3(game, null, 500, 5900, 200, 200, true);
+this.Wall = new DamageZone3(game, null, 700, 5900, 200, 200, true);
+this.Wall = new DamageZone3(game, null, 500, 6100, 200, 200, true);
+this.Wall = new DamageZone3(game, null, 700, 6100, 200, 200, true);
+this.Wall = new DamageZone3(game, null, 500, 6300, 200, 200, true);
+this.Wall = new DamageZone3(game, null, 700, 6300, 200, 200, true);
+this.Wall = new DamageZone3(game, null, 500, 6500, 200, 200, true);
+this.Wall = new DamageZone3(game, null, 700, 6500, 200, 200, true);
+this.Wall = new DamageZone3(game, null, 500, 6700, 200, 200, true);
+this.Wall = new DamageZone3(game, null, 700, 6700, 200, 200, true);
+this.Wall = new DamageZone3(game, null, 600, 5350, 100, 400, false);
+this.Wall = new DamageZone4(game, null, 425, 5475, 50, 50, true);
+this.Wall = new DamageZone4(game, null, 575, 5525, 50, 50, true);
+this.Wall = new DamageZone4(game, null, 725, 5525, 50, 50, true);
+this.Wall = new DamageZone4(game, null, 525, 5625, 50, 50, true);
+this.Wall = new DamageZone4(game, null, 675, 5725, 50, 50, true);
+this.Wall = new DamageZone4(game, null, 475, 5775, 50, 50, true);
+this.Wall = new DamageZone4(game, null, 525, 5925, 50, 50, true);
+this.Wall = new DamageZone4(game, null, 725, 5925, 50, 50, true);
+this.Wall = new DamageZone4(game, null, 675, 5975, 50, 50, true);
+this.Wall = new DamageZone4(game, null, 475, 6075, 50, 50, true);
+this.Wall = new DamageZone4(game, null, 675, 6125, 50, 50, true);
+this.Wall = new DamageZone4(game, null, 625, 6225, 50, 50, true);
+this.Wall = new DamageZone4(game, null, 475, 6275, 50, 50, true);
+this.Wall = new DamageZone4(game, null, 725, 6375, 50, 50, true);
+this.Wall = new DamageZone4(game, null, 475, 6425, 50, 50, true);
+this.Wall = new DamageZone4(game, null, 625, 6525, 50, 50, true);
+this.Wall = new DamageZone4(game, null, 725, 6675, 50, 50, true);
+this.Wall = new DamageZone4(game, null, 475, 6675, 50, 50, true);
+this.Wall = new Wall(game, -700, 6900, 200, 200);
+this.Wall = new Wall(game, 700, 6900, 200, 200);
+this.Wall = new Wall(game, -900, 6900, 200, 200);
+this.Wall = new Wall(game, 900, 6900, 200, 200);
+this.Wall = new Wall(game, -500, 7100, 200, 200);
+this.Wall = new Wall(game, 500, 7100, 200, 200);
+this.Wall = new Wall(game, -300, 7300, 200, 200);
+this.Wall = new Wall(game, 300, 7300, 200, 200);
+this.Wall = new DamageZone10(game, null, -100, 6700, 200, 200, false);
+this.Wall = new DamageZone10(game, null, 100, 6700, 200, 200, false);
+this.Wall = new DamageZone6(game, null, -175, 6575, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -125, 6575, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -75, 6575, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -25, 6575, 50, 50, true);
+this.Wall = new DamageZone6(game, null, 25, 6575, 50, 50, true);
+this.Wall = new DamageZone6(game, null, 75, 6575, 50, 50, true);
+this.Wall = new DamageZone6(game, null, 125, 6575, 50, 50, true);
+this.Wall = new DamageZone6(game, null, 175, 6575, 50, 50, true);
+this.Wall = new Wall(game, -150, 7450, 100, 100);
+this.Wall = new Wall(game, 150, 7450, 100, 100);
+this.Wall = new Wall(game, -75, 7525, 50, 50);
+this.Wall = new Wall(game, 75, 7525, 50, 50);
+this.Wall = new Wall(game, -300, 7700, 200, 200);
+this.Wall = new Wall(game, -300, 7900, 200, 200);
+this.Wall = new Wall(game, 300, 7700, 200, 200);
+this.Wall = new Wall(game, 300, 7900, 200, 200);
+this.Wall = new Wall(game, -100, 8100, 200, 200);
+this.Wall = new Wall(game, 100, 8100, 200, 200);
+this.Wall = new Wall(game, 500, 7700, 200, 200);
+this.Wall = new Wall(game, 500, 7300, 200, 200);
+this.Wall = new Wall(game, 700, 7300, 200, 200);
+this.Wall = new Wall(game, 900, 7300, 200, 200);
+this.Wall = new Wall(game, 700, 7700, 200, 200);
+this.Wall = new Wall(game, 900, 7700, 200, 200);
+this.Wall = new Wall(game, 500, 7700, 200, 200);
+this.Wall = new Wall(game, 500, 7300, 200, 200);
+this.Wall = new Wall(game, 700, 7300, 200, 200);
+this.Wall = new Wall(game, 900, 7300, 200, 200);
+this.Wall = new Wall(game, 700, 7700, 200, 200);
+this.Wall = new Wall(game, 900, 7700, 200, 200);
+this.Wall = new Wall(game, -2100, 7100, 200, 200);
+this.Wall = new Wall(game, -2100, 6900, 200, 200);
+this.Wall = new Wall(game, -2100, 6700, 200, 200);
+this.Wall = new Wall(game, -2100, 6500, 200, 200);
+this.Wall = new Wall(game, -2100, 6300, 200, 200);
+this.Wall = new Wall(game, -2100, 6100, 200, 200);
+this.Wall = new Wall(game, -1100, 7300, 200, 200);
+this.Wall = new Wall(game, -1300, 7300, 200, 200);
+this.Wall = new Wall(game, -1500, 7300, 200, 200);
+this.Wall = new Wall(game, -1700, 7300, 200, 200);
+this.Wall = new Wall(game, -1900, 7300, 200, 200);
+this.Wall = new Wall(game, -2100, 7300, 200, 200);
+this.Wall = new Wall(game, -1100, 7700, 200, 200);
+this.Wall = new Wall(game, -1300, 7700, 200, 200);
+this.Wall = new Wall(game, -1500, 7700, 200, 200);
+this.Wall = new Wall(game, -1700, 7700, 200, 200);
+this.Wall = new Wall(game, -1900, 7700, 200, 200);
+this.Wall = new Wall(game, -2100, 7700, 200, 200);
+this.Wall = new Wall(game, 1100, 7300, 200, 200);
+this.Wall = new Wall(game, 1300, 7300, 200, 200);
+this.Wall = new Wall(game, 1500, 7300, 200, 200);
+this.Wall = new Wall(game, 1700, 7300, 200, 200);
+this.Wall = new Wall(game, 1900, 7300, 200, 200);
+this.Wall = new Wall(game, 2100, 7300, 200, 200);
+this.Wall = new Wall(game, 1100, 7700, 200, 200);
+this.Wall = new Wall(game, 1300, 7700, 200, 200);
+this.Wall = new Wall(game, 1500, 7700, 200, 200);
+this.Wall = new Wall(game, 1700, 7700, 200, 200);
+this.Wall = new Wall(game, 1900, 7700, 200, 200);
+this.Wall = new Wall(game, 2100, 7700, 200, 200);
+this.Wall = new Wall(game, 2300, 7700, 200, 200);
+this.Wall = new Wall(game, 2500, 7700, 200, 200);
+this.Wall = new Wall(game, 2500, 7500, 200, 200);
+this.Wall = new Wall(game, 2500, 7300, 200, 200);
+this.Wall = new Wall(game, 2100, 7100, 200, 200);
+this.Wall = new Wall(game, 2500, 7100, 200, 200);
+this.Wall = new Wall(game, 2100, 6900, 200, 200);
+this.Wall = new Wall(game, 2500, 6900, 200, 200);
+this.Wall = new Wall(game, 2100, 6700, 200, 200);
+this.Wall = new Wall(game, 2500, 6700, 200, 200);
+this.Wall = new Wall(game, 2100, 6500, 200, 200);
+this.Wall = new Wall(game, 2500, 6500, 200, 200);
+this.Wall = new Wall(game, 2100, 6300, 200, 200);
+this.Wall = new Wall(game, 2500, 6300, 200, 200);
+this.Wall = new Wall(game, 2100, 6100, 200, 200);
+this.Wall = new Wall(game, 2500, 6100, 200, 200);
+this.Wall = new Wall(game, -2300, 7700, 200, 200);
+this.Wall = new Wall(game, -2500, 7700, 200, 200);
+this.Wall = new Wall(game, -2500, 7500, 200, 200);
+this.Wall = new Wall(game, -2500, 7300, 200, 200);
+this.Wall = new Wall(game, -2500, 7100, 200, 200);
+this.Wall = new Wall(game, -2500, 6900, 200, 200);
+this.Wall = new Wall(game, -2500, 6700, 200, 200);
+this.Wall = new Wall(game, -2500, 6500, 200, 200);
+this.Wall = new Wall(game, -2500, 6300, 200, 200);
+this.Wall = new Wall(game, -2500, 6100, 200, 200);
+this.Wall = new Wall(game, -900, 7700, 200, 200);
+this.Wall = new Wall(game, -700, 7700, 200, 200);
+this.Wall = new Wall(game, -500, 7700, 200, 200);
+this.Wall = new Wall(game, -900, 7300, 200, 200);
+this.Wall = new Wall(game, -700, 7300, 200, 200);
+this.Wall = new Wall(game, -500, 7300, 200, 200);
+this.Wall = new DamageZone2(game, null, -500, 6900, 200, 200, true);
+this.Wall = new DamageZone2(game, null, -300, 6900, 200, 200, true);
+this.Wall = new DamageZone2(game, null, -100, 6900, 200, 200, true);
+this.Wall = new DamageZone2(game, null, 100, 6900, 200, 200, true);
+this.Wall = new DamageZone2(game, null, 300, 6900, 200, 200, true);
+this.Wall = new DamageZone2(game, null, 500, 6900, 200, 200, true);
+this.Wall = new DamageZone2(game, null, -300, 7100, 200, 200, true);
+this.Wall = new DamageZone2(game, null, -100, 7100, 200, 200, true);
+this.Wall = new DamageZone2(game, null, 100, 7100, 200, 200, true);
+this.Wall = new DamageZone2(game, null, 300, 7100, 200, 200, true);
+this.Wall = new DamageZone2(game, null, -100, 7300, 200, 200, true);
+this.Wall = new DamageZone2(game, null, 100, 7300, 200, 200, true);
+this.Wall = new DamageZone3(game, null, 125, 7525, 50, 50, true);
+this.Wall = new DamageZone3(game, null, 175, 7525, 50, 50, true);
+this.Wall = new DamageZone3(game, null, 125, 7575, 50, 50, true);
+this.Wall = new DamageZone3(game, null, 175, 7575, 50, 50, true);
+this.Wall = new DamageZone3(game, null, -175, 7525, 50, 50, true);
+this.Wall = new DamageZone3(game, null, -125, 7525, 50, 50, true);
+this.Wall = new DamageZone3(game, null, -175, 7575, 50, 50, true);
+this.Wall = new DamageZone3(game, null, -125, 7575, 50, 50, true);
+this.Wall = new DamageZone2(game, null, -75, 7425, 50, 50, true);
+this.Wall = new DamageZone2(game, null, -25, 7425, 50, 50, true);
+this.Wall = new DamageZone2(game, null, 25, 7425, 50, 50, true);
+this.Wall = new DamageZone2(game, null, 75, 7425, 50, 50, true);
+this.Wall = new DamageZone2(game, null, -75, 7475, 50, 50, true);
+this.Wall = new DamageZone2(game, null, -25, 7475, 50, 50, true);
+this.Wall = new DamageZone2(game, null, 25, 7475, 50, 50, true);
+this.Wall = new DamageZone2(game, null, 75, 7475, 50, 50, true);
+this.Wall = new DamageZone2(game, null, 25, 7525, 50, 50, true);
+this.Wall = new DamageZone2(game, null, -25, 7525, 50, 50, true);
+this.Wall = new Wall(game, 1400, 5800, 400, 400);
+this.Wall = new Wall(game, 1800, 5800, 400, 400);
+this.Wall = new Wall(game, 3000, 5800, 400, 400);
+this.Wall = new Wall(game, 3400, 5800, 400, 400);
+this.Wall = new Wall(game, 3400, 5400, 400, 400);
+this.Wall = new Wall(game, 3400, 5000, 400, 400);
+this.Wall = new Wall(game, 3400, 4600, 400, 400);
+this.Wall = new Wall(game, 3400, 4200, 400, 400);
+this.Wall = new Wall(game, 3400, 3800, 400, 400);
+this.Wall = new Wall(game, 3400, 3400, 400, 400);
+this.Wall = new Wall(game, 3400, 3000, 400, 400);
+this.Wall = new Wall(game, 3400, 2600, 400, 400);
+this.Wall = new Wall(game, 3400, 2200, 400, 400);
+this.Wall = new Wall(game, 3400, 1800, 400, 400);
+this.Wall = new Wall(game, 3400, 1400, 400, 400);
+this.Wall = new Wall(game, 3400, 1000, 400, 400);
+this.Wall = new DamageZone9(game, null, 1300, 1100, 200, 200, false);
+this.Wall = new DamageZone9(game, null, 1500, 1100, 200, 200, false);
+this.Wall = new DamageZone9(game, null, 1700, 1100, 200, 200, false);
+this.Wall = new DamageZone9(game, null, 1900, 1100, 200, 200, false);
+this.Wall = new DamageZone9(game, null, 2100, 1100, 200, 200, false);
+this.Wall = new DamageZone9(game, null, 2300, 1100, 200, 200, false);
+this.Wall = new DamageZone9(game, null, 2500, 1100, 200, 200, false);
+this.Wall = new DamageZone9(game, null, 2700, 1100, 200, 200, false);
+this.Wall = new DamageZone9(game, null, 2900, 1100, 200, 200, false);
+this.Wall = new DamageZone9(game, null, 3100, 1100, 200, 200, false);
+this.Wall = new DamageZone8(game, null, 1300, 1300, 200, 200, false);
+this.Wall = new DamageZone8(game, null, 1500, 1300, 200, 200, false);
+this.Wall = new DamageZone8(game, null, 1700, 1300, 200, 200, false);
+this.Wall = new DamageZone8(game, null, 1900, 1300, 200, 200, false);
+this.Wall = new DamageZone8(game, null, 2100, 1300, 200, 200, false);
+this.Wall = new DamageZone8(game, null, 2300, 1300, 200, 200, false);
+this.Wall = new DamageZone8(game, null, 2500, 1300, 200, 200, false);
+this.Wall = new DamageZone8(game, null, 2700, 1300, 200, 200, false);
+this.Wall = new DamageZone8(game, null, 2900, 1300, 200, 200, false);
+this.Wall = new DamageZone8(game, null, 3100, 1300, 200, 200, false);
+this.Wall = new DamageZone7(game, null, 1300, 1500, 200, 200, false);
+this.Wall = new DamageZone7(game, null, 1500, 1500, 200, 200, false);
+this.Wall = new DamageZone7(game, null, 1700, 1500, 200, 200, false);
+this.Wall = new DamageZone7(game, null, 1900, 1500, 200, 200, false);
+this.Wall = new DamageZone7(game, null, 2100, 1500, 200, 200, false);
+this.Wall = new DamageZone7(game, null, 2300, 1500, 200, 200, false);
+this.Wall = new DamageZone7(game, null, 2500, 1500, 200, 200, false);
+this.Wall = new DamageZone7(game, null, 2700, 1500, 200, 200, false);
+this.Wall = new DamageZone7(game, null, 2900, 1500, 200, 200, false);
+this.Wall = new DamageZone7(game, null, 3100, 1500, 200, 200, false);
+this.Wall = new Wall(game, 3000, 600, 400, 400);
+this.Wall = new Wall(game, 2600, 200, 400, 400);
+this.Wall = new Wall(game, 2200, -200, 400, 400);
+this.Wall = new Wall(game, 1800, -600, 400, 400);
+this.Wall = new Wall(game, 1400, -1000, 400, 400);
+this.Wall = new Wall(game, 1900, 6100, 200, 200);
+this.Wall = new Wall(game, 2700, 6100, 200, 200);
+this.Wall = new Wall(game, 2900, 6100, 200, 200);
+this.Wall = new Wall(game, 2700, 5900, 200, 200);
+this.Wall = new Wall(game, 2700, 5700, 200, 200);
+this.Wall = new Wall(game, -2700, 6100, 200, 200);
+this.Wall = new Wall(game, -2900, 6100, 200, 200);
+this.Wall = new Wall(game, -1900, 6100, 200, 200);
+this.Wall = new Wall(game, -2900, 5900, 200, 200);
+this.Wall = new Wall(game, -2900, 5700, 200, 200);
+this.Wall = new Wall(game, -1400, 5800, 400, 400);
+this.Wall = new Wall(game, -1800, 5800, 400, 400);
+this.Wall = new Wall(game, -2700, 5900, 200, 200);
+this.Wall = new Wall(game, -2700, 5700, 200, 200);
+this.Wall = new Wall(game, -3000, 5800, 400, 400);
+this.Wall = new Wall(game, -3400, 5800, 400, 400);
+this.Wall = new Wall(game, -1400, -1000, 400, 400);
+this.Wall = new Wall(game, -1800, -600, 400, 400);
+this.Wall = new Wall(game, -2200, -200, 400, 400);
+this.Wall = new Wall(game, -2600, 200, 400, 400);
+this.Wall = new Wall(game, -3000, 600, 400, 400);
+this.Wall = new Wall(game, -3400, 1000, 400, 400);
+this.Wall = new Wall(game, -3400, 1400, 400, 400);
+this.Wall = new Wall(game, -3400, 1800, 400, 400);
+this.Wall = new Wall(game, -3400, 2200, 400, 400);
+this.Wall = new Wall(game, -3400, 2600, 400, 400);
+this.Wall = new Wall(game, -3400, 3000, 400, 400);
+this.Wall = new Wall(game, -3400, 3400, 400, 400);
+this.Wall = new Wall(game, -3400, 3800, 400, 400);
+this.Wall = new Wall(game, -3400, 4200, 400, 400);
+this.Wall = new Wall(game, -3400, 4600, 400, 400);
+this.Wall = new Wall(game, -3400, 5000, 400, 400);
+this.Wall = new Wall(game, -3400, 5400, 400, 400);
+this.Wall = new DamageZone9(game, null, -3100, 1100, 200, 200, false);
+this.Wall = new DamageZone9(game, null, -2900, 1100, 200, 200, false);
+this.Wall = new DamageZone9(game, null, -2700, 1100, 200, 200, false);
+this.Wall = new DamageZone9(game, null, -2500, 1100, 200, 200, false);
+this.Wall = new DamageZone9(game, null, -2300, 1100, 200, 200, false);
+this.Wall = new DamageZone9(game, null, -2100, 1100, 200, 200, false);
+this.Wall = new DamageZone9(game, null, -1900, 1100, 200, 200, false);
+this.Wall = new DamageZone9(game, null, -1700, 1100, 200, 200, false);
+this.Wall = new DamageZone9(game, null, -1500, 1100, 200, 200, false);
+this.Wall = new DamageZone9(game, null, -1300, 1100, 200, 200, false);
+this.Wall = new DamageZone8(game, null, -3100, 1300, 200, 200, false);
+this.Wall = new DamageZone8(game, null, -2900, 1300, 200, 200, false);
+this.Wall = new DamageZone8(game, null, -2700, 1300, 200, 200, false);
+this.Wall = new DamageZone8(game, null, -2500, 1300, 200, 200, false);
+this.Wall = new DamageZone8(game, null, -2300, 1300, 200, 200, false);
+this.Wall = new DamageZone8(game, null, -2100, 1300, 200, 200, false);
+this.Wall = new DamageZone8(game, null, -1900, 1300, 200, 200, false);
+this.Wall = new DamageZone8(game, null, -1700, 1300, 200, 200, false);
+this.Wall = new DamageZone8(game, null, -1500, 1300, 200, 200, false);
+this.Wall = new DamageZone8(game, null, -1300, 1300, 200, 200, false);
+this.Wall = new DamageZone7(game, null, -3100, 1500, 200, 200, false);
+this.Wall = new DamageZone7(game, null, -2900, 1500, 200, 200, false);
+this.Wall = new DamageZone7(game, null, -2500, 1500, 200, 200, false);
+this.Wall = new DamageZone7(game, null, -2700, 1500, 200, 200, false);
+this.Wall = new DamageZone7(game, null, -2300, 1500, 200, 200, false);
+this.Wall = new DamageZone7(game, null, -1900, 1500, 200, 200, false);
+this.Wall = new DamageZone7(game, null, -2100, 1500, 200, 200, false);
+this.Wall = new DamageZone7(game, null, -1700, 1500, 200, 200, false);
+this.Wall = new DamageZone7(game, null, -1300, 1500, 200, 200, false);
+this.Wall = new DamageZone7(game, null, -1500, 1500, 200, 200, false);
+this.Wall = new DamageZone4(game, null, 1300, 5500, 200, 200, true);
+this.Wall = new DamageZone4(game, null, 3100, 5500, 200, 200, true);
+
+this.Wall = new DamageZoneY(game, null, 1275, -125, 50, 50, false);
+this.Wall = new DamageZoneY(game, null, 1275, -75, 50, 50, false);
+this.Wall = new DamageZoneY(game, null, 1325, -25, 50, 50, false);
+this.Wall = new DamageZoneY(game, null, 1375, -125, 50, 50, false);
+this.Wall = new DamageZoneY(game, null, 1375, -75, 50, 50, false);
+this.Wall = new DamageZoneY(game, null, 1425, -25, 50, 50, false);
+this.Wall = new DamageZoneY(game, null, 1475, -125, 50, 50, false);
+this.Wall = new DamageZoneY(game, null, 1475, -75, 50, 50, false);
+this.Wall = new DamageZoneY(game, null, 1575, -225, 50, 50, false);
+this.Wall = new DamageZoneY(game, null, 1575, -125, 50, 50, false);
+this.Wall = new DamageZoneY(game, null, 1575, -75, 50, 50, false);
+this.Wall = new DamageZoneY(game, null, 1575, -25, 50, 50, false);
+this.Wall = new DamageZoneY(game, null, 1675, -25, 50, 50, false);
+this.Wall = new DamageZoneY(game, null, 1675, -75, 50, 50, false);
+this.Wall = new DamageZoneY(game, null, 1675, -125, 50, 50, false);
+this.Wall = new DamageZoneY(game, null, 1725, -125, 50, 50, false);
+this.Wall = new DamageZoneY(game, null, 1775, -125, 50, 50, false);
+this.Wall = new DamageZoneY(game, null, 1775, -75, 50, 50, false);
+this.Wall = new DamageZoneY(game, null, 1775, -25, 50, 50, false);
+
+this.Wall = new DamageZoneY(game, null, -1275, -25, 50, 50, false);
+this.Wall = new DamageZoneY(game, null, -1275, -75, 50, 50, false);
+this.Wall = new DamageZoneY(game, null, -1275, -125, 50, 50, false);
+this.Wall = new DamageZoneY(game, null, -1375, -125, 50, 50, false);
+this.Wall = new DamageZoneY(game, null, -1325, -125, 50, 50, false);
+this.Wall = new DamageZoneY(game, null, -1375, -75, 50, 50, false);
+this.Wall = new DamageZoneY(game, null, -1375, -25, 50, 50, false);
+this.Wall = new DamageZoneY(game, null, -1475, -25, 50, 50, false);
+this.Wall = new DamageZoneY(game, null, -1475, -75, 50, 50, false);
+this.Wall = new DamageZoneY(game, null, -1475, -125, 50, 50, false);
+this.Wall = new DamageZoneY(game, null, -1475, -225, 50, 50, false);
+this.Wall = new DamageZoneY(game, null, -1625, -25, 50, 50, false);
+this.Wall = new DamageZoneY(game, null, -1725, -25, 50, 50, false);
+this.Wall = new DamageZoneY(game, null, -1575, -75, 50, 50, false);
+this.Wall = new DamageZoneY(game, null, -1575, -125, 50, 50, false);
+this.Wall = new DamageZoneY(game, null, -1675, -75, 50, 50, false);
+this.Wall = new DamageZoneY(game, null, -1675, -125, 50, 50, false);
+this.Wall = new DamageZoneY(game, null, -1775, -75, 50, 50, false);
+this.Wall = new DamageZoneY(game, null, -1775, -125, 50, 50, false);
+
+this.Wall = new Ball(game, -300, 4200);
+this.Wall = new Ball(game, -200, 4200);
+this.Wall = new Ball(game, -100, 4200);
+this.Wall = new Ball(game,    0, 4200);
+this.Wall = new Ball(game,  100, 4200);
+this.Wall = new Ball(game,  200, 4200);
+this.Wall = new Ball(game,  300, 4200);
+this.Wall = new Ball(game, -300, 4300);
+this.Wall = new Ball(game, -200, 4300);
+this.Wall = new Ball(game, -100, 4300);
+this.Wall = new Ball(game,    0, 4300);
+this.Wall = new Ball(game,  100, 4300);
+this.Wall = new Ball(game,  200, 4300);
+this.Wall = new Ball(game,  300, 4300);
+this.Wall = new Ball(game, -300, 4400);
+this.Wall = new Ball(game, -200, 4400);
+this.Wall = new Ball(game, -100, 4400);
+this.Wall = new Ball(game,    0, 4400);
+this.Wall = new Ball(game,  100, 4400);
+this.Wall = new Ball(game,  200, 4400);
+this.Wall = new Ball(game,  300, 4400);
+this.Wall = new Ball(game, -300, 4500);
+this.Wall = new Ball(game, -200, 4500);
+this.Wall = new Ball(game, -100, 4500);
+this.Wall = new Ball(game,    0, 4500);
+this.Wall = new Ball(game,  100, 4500);
+this.Wall = new Ball(game,  200, 4500);
+this.Wall = new Ball(game,  300, 4500);
+this.Wall = new Ball(game, -300, 4600);
+this.Wall = new Ball(game, -200, 4600);
+this.Wall = new Ball(game, -100, 4600);
+this.Wall = new Ball(game,    0, 4600);
+this.Wall = new Ball(game,  100, 4600);
+this.Wall = new Ball(game,  200, 4600);
+this.Wall = new Ball(game,  300, 4600);
+this.Wall = new Ball(game, -300, 4700);
+this.Wall = new Ball(game, -200, 4700);
+this.Wall = new Ball(game, -100, 4700);
+this.Wall = new Ball(game,    0, 4700);
+this.Wall = new Ball(game,  100, 4700);
+this.Wall = new Ball(game,  200, 4700);
+this.Wall = new Ball(game,  300, 4700);
+
+
+
+
+
+// hard obby
+
+
+this.Wall = new TankSetter(game, null, -450, -4000, 600, 600, false, Tank.ObbyTank2);
+this.Wall = new TankSetter(game, null, -450, -7250, 100, 200, false, Tank.ObbyTank);
+this.Wall = new InvisTankSetter(game, null, -200, -11100, 100, 100, false, Tank.Tank);
+
+
+this.Wall = new Wall(game, 150, -1250, 100, 100);
+this.Wall = new Wall(game, 150, -1350, 100, 100);
+this.Wall = new Wall(game, 150, -1550, 100, 100);
+this.Wall = new Wall(game, 150, -1450, 100, 100);
+this.Wall = new Wall(game, 150, -1650, 100, 100);
+this.Wall = new Wall(game, 150, -1750, 100, 100);
+
+this.Wall = new Wall(game, -150, -1250, 100, 100);
+this.Wall = new Wall(game, -150, -1350, 100, 100);
+this.Wall = new Wall(game, -150, -1450, 100, 100);
+this.Wall = new Wall(game, -150, -1550, 100, 100);
+this.Wall = new Wall(game, -150, -1650, 100, 100);
+this.Wall = new Wall(game, -150, -1750, 100, 100);
+
+this.Wall = new Wall(game, -150, -1850, 100, 100);
+this.Wall = new Wall(game, -150, -1950, 100, 100);
+this.Wall = new Wall(game, -150, -2050, 100, 100);
+this.Wall = new Wall(game, -150, -2150, 100, 100);
+
+this.Wall = new Wall(game, 150, -1850, 100, 100);
+this.Wall = new Wall(game, 150, -1950, 100, 100);
+this.Wall = new Wall(game, 150, -2050, 100, 100);
+this.Wall = new Wall(game, 150, -2150, 100, 100);
+
+this.Wall = new Wall(game, -250, -2150, 100, 100);
+this.Wall = new Wall(game, -350, -2150, 100, 100);
+this.Wall = new Wall(game, -450, -2150, 100, 100);
+
+this.Wall = new Wall(game, 250, -2150, 100, 100);
+this.Wall = new Wall(game, 350, -2150, 100, 100);
+this.Wall = new Wall(game, 450, -2150, 100, 100);
+
+this.Wall = new Wall(game, -450, -2450, 100, 100);
+this.Wall = new Wall(game, -350, -2450, 100, 100);
+this.Wall = new Wall(game, -150, -2450, 100, 100);
+this.Wall = new Wall(game, -250, -2450, 100, 100);
+
+this.Wall = new Wall(game, 150, -2450, 100, 100);
+this.Wall = new Wall(game, 250, -2450, 100, 100);
+this.Wall = new Wall(game, 350, -2450, 100, 100);
+this.Wall = new Wall(game, 450, -2450, 100, 100);
+
+this.Wall = new Wall(game, -150, -2550, 100, 100);
+this.Wall = new Wall(game, -150, -2650, 100, 100);
+this.Wall = new Wall(game, -150, -2750, 100, 100);
+
+this.Wall = new Wall(game, 150, -2550, 100, 100);
+this.Wall = new Wall(game, 150, -2650, 100, 100);
+this.Wall = new Wall(game, 150, -2750, 100, 100);
+
+this.Wall = new Wall(game, -250, -2750, 100, 100);
+this.Wall = new Wall(game, -450, -2750, 100, 100);
+this.Wall = new Wall(game, -350, -2750, 100, 100);
+this.Wall = new Wall(game, -450, -2650, 100, 100);
+this.Wall = new Wall(game, -450, -2550, 100, 100);
+
+this.Wall = new Wall(game, 250, -2750, 100, 100);
+this.Wall = new Wall(game, 350, -2750, 100, 100);
+this.Wall = new Wall(game, 450, -2750, 100, 100);
+this.Wall = new Wall(game, 450, -2650, 100, 100);
+this.Wall = new Wall(game, 450, -2550, 100, 100);
+
+this.Wall = new Wall(game, 650, -2150, 100, 100);
+this.Wall = new Wall(game, 550, -2150, 100, 100);
+this.Wall = new Wall(game, 750, -2150, 100, 100);
+this.Wall = new Wall(game, 750, -2250, 100, 100);
+this.Wall = new Wall(game, 750, -2350, 100, 100);
+this.Wall = new Wall(game, 750, -2450, 100, 100);
+this.Wall = new Wall(game, 750, -2550, 100, 100);
+this.Wall = new Wall(game, 750, -2650, 100, 100);
+this.Wall = new Wall(game, 750, -2750, 100, 100);
+this.Wall = new Wall(game, 750, -2850, 100, 100);
+this.Wall = new Wall(game, 750, -2950, 100, 100);
+this.Wall = new Wall(game, 750, -3050, 100, 100);
+this.Wall = new Wall(game, 750, -3150, 100, 100);
+this.Wall = new Wall(game, 750, -3250, 100, 100);
+this.Wall = new Wall(game, 750, -3350, 100, 100);
+this.Wall = new Wall(game, 750, -3450, 100, 100);
+
+this.Wall = new Wall(game, 150, -3650, 100, 100);
+this.Wall = new Wall(game, 250, -3650, 100, 100);
+this.Wall = new Wall(game, 350, -3650, 100, 100);
+this.Wall = new Wall(game, 450, -3650, 100, 100);
+this.Wall = new Wall(game, 550, -3650, 100, 100);
+this.Wall = new Wall(game, 750, -3650, 100, 100);
+this.Wall = new Wall(game, 650, -3650, 100, 100);
+this.Wall = new Wall(game, 750, -3550, 100, 100);
+
+this.Wall = new Wall(game, 150, -3350, 100, 100);
+this.Wall = new Wall(game, 250, -3350, 100, 100);
+this.Wall = new Wall(game, 350, -3350, 100, 100);
+this.Wall = new Wall(game, 450, -3350, 100, 100);
+this.Wall = new Wall(game, 450, -3250, 100, 100);
+this.Wall = new Wall(game, 450, -3150, 100, 100);
+this.Wall = new Wall(game, 450, -3050, 100, 100);
+this.Wall = new Wall(game, 450, -2950, 100, 100);
+this.Wall = new Wall(game, 450, -2850, 100, 100);
+
+this.Wall = new Wall(game, -150, -3350, 100, 100);
+this.Wall = new Wall(game, -150, -3650, 100, 100);
+this.Wall = new Wall(game, -150, -2850, 100, 100);
+this.Wall = new Wall(game, -150, -3250, 100, 100);
+this.Wall = new Wall(game, -150, -2950, 100, 100);
+
+this.Wall = new Wall(game, -75, -3025, 50, 50);
+this.Wall = new Wall(game, -125, -3025, 50, 50);
+this.Wall = new Wall(game, -175, -3025, 50, 50);
+this.Wall = new Wall(game, -25, -3025, 50, 50);
+this.Wall = new Wall(game, 25, -3025, 50, 50);
+this.Wall = new Wall(game, 75, -3025, 50, 50);
+this.Wall = new Wall(game, 125, -3025, 50, 50);
+this.Wall = new Wall(game, 175, -3025, 50, 50);
+
+this.Wall = new DamageZone3(game, null, -375, -2575, 50, 50, true);
+this.Wall = new DamageZone3(game, null, -325, -2525, 50, 50, true);
+this.Wall = new DamageZone3(game, null, -275, -2575, 50, 50, true);
+this.Wall = new DamageZone3(game, null, -225, -2625, 50, 50, true);
+this.Wall = new DamageZone3(game, null, -225, -2675, 50, 50, true);
+
+this.Wall = new DamageZone6(game, null, 225, -2675, 50, 50, true);
+this.Wall = new DamageZone6(game, null, 275, -2625, 50, 50, true);
+this.Wall = new DamageZone6(game, null, 325, -2575, 50, 50, true);
+this.Wall = new DamageZone6(game, null, 375, -2525, 50, 50, true);
+this.Wall = new DamageZone6(game, null, 375, -2675, 50, 50, true);
+this.Wall = new DamageZone6(game, null, 325, -2625, 50, 50, true);
+this.Wall = new DamageZone6(game, null, 275, -2575, 50, 50, true);
+this.Wall = new DamageZone6(game, null, 225, -2525, 50, 50, true);
+
+this.Wall = new Wall(game, -550, -2150, 100, 100);
+this.Wall = new Wall(game, -650, -2150, 100, 100);
+this.Wall = new Wall(game, -750, -2150, 100, 100);
+this.Wall = new Wall(game, -750, -2250, 100, 100);
+this.Wall = new Wall(game, -750, -2350, 100, 100);
+this.Wall = new Wall(game, -750, -2450, 100, 100);
+this.Wall = new Wall(game, -750, -2550, 100, 100);
+this.Wall = new Wall(game, -750, -2650, 100, 100);
+this.Wall = new Wall(game, -750, -2750, 100, 100);
+this.Wall = new Wall(game, -750, -2850, 100, 100);
+this.Wall = new Wall(game, -750, -2950, 100, 100);
+this.Wall = new Wall(game, -750, -3050, 100, 100);
+
+this.Wall = new Wall(game, -450, -2850, 100, 100);
+this.Wall = new Wall(game, -450, -2950, 100, 100);
+this.Wall = new Wall(game, -450, -3050, 100, 100);
+this.Wall = new Wall(game, -450, -3150, 100, 100);
+this.Wall = new Wall(game, -450, -3250, 100, 100);
+this.Wall = new Wall(game, -450, -3350, 100, 100);
+this.Wall = new Wall(game, -450, -3450, 100, 100);
+this.Wall = new Wall(game, -450, -3550, 100, 100);
+this.Wall = new Wall(game, -450, -3650, 100, 100);
+
+this.Wall = new Wall(game, -750, -3150, 100, 100);
+this.Wall = new Wall(game, -750, -3250, 100, 100);
+this.Wall = new Wall(game, -750, -3350, 100, 100);
+this.Wall = new Wall(game, -750, -3450, 100, 100);
+this.Wall = new Wall(game, -750, -3550, 100, 100);
+this.Wall = new Wall(game, -750, -3650, 100, 100);
+
+this.Wall = new Wall(game, -150, -3750, 100, 100);
+this.Wall = new Wall(game, -750, -3750, 100, 100);
+this.Wall = new Wall(game, -750, -3850, 100, 100);
+this.Wall = new Wall(game, -750, -3950, 100, 100);
+this.Wall = new Wall(game, -150, -3850, 100, 100);
+this.Wall = new Wall(game, -150, -3950, 100, 100);
+this.Wall = new Wall(game, -750, -4050, 100, 100);
+this.Wall = new Wall(game, -750, -4150, 100, 100);
+this.Wall = new Wall(game, -150, -4050, 100, 100);
+this.Wall = new Wall(game, -150, -4150, 100, 100);
+
+this.Wall = new Wall(game, -475, -3775, 50, 50);
+this.Wall = new Wall(game, -425, -3875, 50, 50);
+this.Wall = new Wall(game, -475, -3975, 50, 50);
+this.Wall = new Wall(game, -425, -4075, 50, 50);
+this.Wall = new Wall(game, -475, -4175, 50, 50);
+this.Wall = new Wall(game, -425, -4275, 50, 50);
+
+this.Wall = new Wall(game, -750, -4250, 100, 100);
+this.Wall = new Wall(game, -150, -4250, 100, 100);
+
+this.Wall = new Wall(game, -850, -4250, 100, 100);
+this.Wall = new Wall(game, -950, -4250, 100, 100);
+this.Wall = new Wall(game, -1050, -4350, 100, 100);
+this.Wall = new Wall(game, -1150, -4350, 100, 100);
+this.Wall = new Wall(game, -1250, -4450, 100, 100);
+
+this.Wall = new Wall(game, -50, -4250, 100, 100);
+this.Wall = new Wall(game, 50, -4250, 100, 100);
+this.Wall = new Wall(game, 150, -4350, 100, 100);
+this.Wall = new Wall(game, 250, -4350, 100, 100);
+this.Wall = new Wall(game, 350, -4450, 100, 100);
+
+this.Wall = new Wall(game, -1350, -4550, 100, 100);
+this.Wall = new Wall(game, -1350, -4650, 100, 100);
+this.Wall = new Wall(game, -1450, -4750, 100, 100);
+this.Wall = new Wall(game, -1450, -4850, 100, 100);
+this.Wall = new Wall(game, -1450, -4950, 100, 100);
+
+this.Wall = new Wall(game, 450, -4550, 100, 100);
+this.Wall = new Wall(game, 450, -4650, 100, 100);
+this.Wall = new Wall(game, 550, -4750, 100, 100);
+this.Wall = new Wall(game, 550, -4850, 100, 100);
+this.Wall = new Wall(game, 550, -4950, 100, 100);
+
+this.Wall = new Wall(game, -1450, -5050, 100, 100);
+this.Wall = new Wall(game, -1450, -5150, 100, 100);
+this.Wall = new Wall(game, -1450, -5350, 100, 100);
+this.Wall = new Wall(game, -1450, -5250, 100, 100);
+this.Wall = new Wall(game, -1450, -5450, 100, 100);
+this.Wall = new Wall(game, -1450, -5550, 100, 100);
+this.Wall = new Wall(game, -1450, -5650, 100, 100);
+this.Wall = new Wall(game, -1450, -5750, 100, 100);
+
+this.Wall = new Wall(game, 550, -5050, 100, 100);
+this.Wall = new Wall(game, 550, -5150, 100, 100);
+this.Wall = new Wall(game, 550, -5350, 100, 100);
+this.Wall = new Wall(game, 550, -5250, 100, 100);
+this.Wall = new Wall(game, 550, -5450, 100, 100);
+this.Wall = new Wall(game, 550, -5550, 100, 100);
+this.Wall = new Wall(game, 550, -5650, 100, 100);
+this.Wall = new Wall(game, 550, -5750, 100, 100);
+
+this.Wall = new Wall(game, -475, -4375, 50, 50);
+this.Wall = new Wall(game, -425, -4475, 50, 50);
+this.Wall = new Wall(game, -475, -4575, 50, 50);
+this.Wall = new Wall(game, -425, -4675, 50, 50);
+this.Wall = new Wall(game, -475, -4775, 50, 50);
+this.Wall = new Wall(game, -425, -4875, 50, 50);
+this.Wall = new Wall(game, -475, -4975, 50, 50);
+this.Wall = new Wall(game, -425, -5075, 50, 50);
+
+this.Wall = new Wall(game, -475, -5175, 50, 50);
+this.Wall = new Wall(game, -425, -5275, 50, 50);
+this.Wall = new Wall(game, -475, -5375, 50, 50);
+this.Wall = new Wall(game, -425, -5475, 50, 50);
+this.Wall = new Wall(game, -475, -5575, 50, 50);
+this.Wall = new Wall(game, -425, -5675, 50, 50);
+this.Wall = new Wall(game, -475, -5775, 50, 50);
+
+this.Wall = new DamageZone2(game, null, -450, -5250, 1100, 1900, true);
+this.Wall = new DamageZone2(game, null, -450, -4500, 400, 1100, true);
+this.Wall = new DamageZone2(game, null, 250, -4550, 300, 300, true);
+this.Wall = new DamageZone2(game, null, -1150, -4550, 300, 300, true);
+
+this.Wall = new Wall(game, -1450, -5850, 100, 100);
+this.Wall = new Wall(game, -1450, -5950, 100, 100);
+this.Wall = new Wall(game, -1450, -6050, 100, 100);
+this.Wall = new Wall(game, -1450, -6150, 100, 100);
+this.Wall = new Wall(game, -1450, -6250, 100, 100);
+this.Wall = new Wall(game, -1450, -6350, 100, 100);
+
+this.Wall = new Wall(game, 550, -5850, 100, 100);
+this.Wall = new Wall(game, 550, -5950, 100, 100);
+this.Wall = new Wall(game, 550, -6050, 100, 100);
+this.Wall = new Wall(game, 550, -6150, 100, 100);
+this.Wall = new Wall(game, 550, -6250, 100, 100);
+this.Wall = new Wall(game, 550, -6350, 100, 100);
+
+this.Wall = new Wall(game, -1350, -6450, 100, 100);
+this.Wall = new Wall(game, -1250, -6550, 100, 100);
+this.Wall = new Wall(game, -1150, -6650, 100, 100);
+this.Wall = new Wall(game, -1050, -6750, 100, 100);
+this.Wall = new Wall(game, -950, -6850, 100, 100);
+this.Wall = new Wall(game, -850, -6950, 100, 100);
+
+this.Wall = new Wall(game, 450, -6450, 100, 100);
+this.Wall = new Wall(game, 350, -6550, 100, 100);
+this.Wall = new Wall(game, 250, -6650, 100, 100);
+this.Wall = new Wall(game, 150, -6750, 100, 100);
+this.Wall = new Wall(game, 50, -6850, 100, 100);
+this.Wall = new Wall(game, -50, -6950, 100, 100);
+this.Wall = new Wall(game, -150, -7050, 100, 100);
+this.Wall = new Wall(game, -250, -7150, 100, 100);
+
+this.Wall = new Wall(game, -750, -7050, 100, 100);
+this.Wall = new Wall(game, -650, -7150, 100, 100);
+
+this.Wall = new Wall(game, -575, -7275, 50, 50);
+this.Wall = new Wall(game, -575, -7225, 50, 50);
+this.Wall = new Wall(game, -325, -7275, 50, 50);
+this.Wall = new Wall(game, -325, -7225, 50, 50);
+
+this.Wall = new DamageZone10(game, null, 125, -6125, 50, 50, true);
+this.Wall = new DamageZone10(game, null, -475, -6325, 50, 50, true);
+this.Wall = new DamageZone10(game, null, -125, -6625, 50, 50, true);
+this.Wall = new DamageZone10(game, null, -975, -6175, 50, 50, true);
+this.Wall = new DamageZone10(game, null, -725, -6675, 50, 50, true);
+this.Wall = new DamageZone10(game, null, -225, -6975, 50, 50, true);
+
+this.Wall = new DamageZone9(game, null, -775, -5975, 50, 50, true);
+this.Wall = new DamageZone9(game, null, -125, -6225, 50, 50, true);
+this.Wall = new DamageZone9(game, null, 325, -6275, 50, 50, true);
+this.Wall = new DamageZone9(game, null, -875, -6425, 50, 50, true);
+this.Wall = new DamageZone9(game, null, -425, -6725, 50, 50, true);
+this.Wall = new DamageZone9(game, null, -675, -6975, 50, 50, true);
+this.Wall = new DamageZone9(game, null, -1325, -5875, 50, 50, true);
+
+this.Wall = new DamageZone8(game, null, -1125, -6375, 50, 50, true);
+this.Wall = new DamageZone8(game, null, -575, -6525, 50, 50, true);
+this.Wall = new DamageZone8(game, null, -725, -6175, 50, 50, true);
+this.Wall = new DamageZone8(game, null, -1025, -5975, 50, 50, true);
+this.Wall = new DamageZone8(game, null, -125, -5975, 50, 50, true);
+this.Wall = new DamageZone8(game, null, 375, -5975, 50, 50, true);
+this.Wall = new DamageZone8(game, null, -425, -6875, 50, 50, true);
+this.Wall = new DamageZone8(game, null, 225, -6525, 50, 50, true);
+this.Wall = new DamageZone8(game, null, -975, -6675, 50, 50, true);
+this.Wall = new DamageZone8(game, null, -275, -6525, 50, 50, true);
+
+this.Wall = new DamageZone7(game, null, -725, -6325, 50, 50, true);
+this.Wall = new DamageZone7(game, null, -625, -6825, 50, 50, true);
+this.Wall = new DamageZone7(game, null, -475, -7025, 50, 50, true);
+this.Wall = new DamageZone7(game, null, 125, -5875, 50, 50, true);
+this.Wall = new DamageZone7(game, null, -1225, -6125, 50, 50, true);
+this.Wall = new DamageZone7(game, null, -1275, -6325, 50, 50, true);
+this.Wall = new DamageZone7(game, null, -975, -6525, 50, 50, true);
+this.Wall = new DamageZone7(game, null, 75, -6375, 50, 50, true);
+this.Wall = new DamageZone7(game, null, -325, -6125, 50, 50, true);
+this.Wall = new DamageZone7(game, null, -525, -6075, 50, 50, true);
+this.Wall = new DamageZone7(game, null, 25, -6725, 50, 50, true);
+this.Wall = new DamageZone7(game, null, -25, -6875, 50, 50, true);
+this.Wall = new DamageZone7(game, null, -225, -6775, 50, 50, true);
+
+this.Wall = new Wall(game, -650, -7350, 100, 100);
+this.Wall = new Wall(game, -750, -7450, 100, 100);
+this.Wall = new Wall(game, -250, -7350, 100, 100);
+this.Wall = new Wall(game, -150, -7450, 100, 100);
+
+this.Wall = new Wall(game, -850, -7550, 100, 100);
+this.Wall = new Wall(game, -950, -7650, 100, 100);
+this.Wall = new Wall(game, -50, -7550, 100, 100);
+this.Wall = new Wall(game, 50, -7650, 100, 100);
+
+this.Wall = new Wall(game, -950, -7750, 100, 100);
+this.Wall = new Wall(game, -950, -7850, 100, 100);
+this.Wall = new Wall(game, -950, -7950, 100, 100);
+this.Wall = new Wall(game, 50, -7750, 100, 100);
+this.Wall = new Wall(game, 50, -7850, 100, 100);
+this.Wall = new Wall(game, 50, -7950, 100, 100);
+
+this.Wall = new Wall(game, -850, -8150, 100, 100);
+this.Wall = new Wall(game, -950, -8050, 100, 100);
+this.Wall = new Wall(game, 50, -8050, 100, 100);
+this.Wall = new Wall(game, -50, -8150, 100, 100);
+this.Wall = new Wall(game, -50, -8250, 100, 100);
+this.Wall = new Wall(game, -850, -8250, 100, 100);
+this.Wall = new Wall(game, -750, -8350, 100, 100);
+this.Wall = new Wall(game, -750, -8450, 100, 100);
+this.Wall = new Wall(game, -150, -8350, 100, 100);
+
+this.Wall = new Wall(game, -650, -8550, 100, 100);
+this.Wall = new Wall(game, -650, -8650, 100, 100);
+this.Wall = new Wall(game, -250, -8550, 100, 100);
+this.Wall = new Wall(game, -150, -8450, 100, 100);
+
+this.Wall = new Wall(game, -250, -8650, 100, 100);
+this.Wall = new Wall(game, -650, -8750, 100, 100);
+this.Wall = new Wall(game, -650, -8850, 100, 100);
+this.Wall = new Wall(game, -250, -8750, 100, 100);
+this.Wall = new Wall(game, -250, -8850, 100, 100);
+
+this.Wall = new Wall(game, -750, -8950, 100, 100);
+this.Wall = new Wall(game, -850, -9050, 100, 100);
+this.Wall = new Wall(game, -950, -9050, 100, 100);
+this.Wall = new Wall(game, -1050, -9150, 100, 100);
+this.Wall = new Wall(game, -1150, -9150, 100, 100);
+
+this.Wall = new Wall(game, -150, -8950, 100, 100);
+this.Wall = new Wall(game, -50, -9050, 100, 100);
+this.Wall = new Wall(game, 50, -9050, 100, 100);
+this.Wall = new Wall(game, 150, -9150, 100, 100);
+this.Wall = new Wall(game, 250, -9150, 100, 100);
+
+this.Wall = new Wall(game, -1250, -9150, 100, 100);
+this.Wall = new Wall(game, -1350, -9150, 100, 100);
+this.Wall = new Wall(game, 350, -9150, 100, 100);
+this.Wall = new Wall(game, 550, -9150, 100, 100);
+this.Wall = new Wall(game, 450, -9150, 100, 100);
+this.Wall = new Wall(game, -1450, -9150, 100, 100);
+this.Wall = new Wall(game, -1550, -9150, 100, 100);
+this.Wall = new Wall(game, 650, -9150, 100, 100);
+
+this.Wall = new Wall(game, -1550, -9250, 100, 100);
+this.Wall = new Wall(game, -1550, -9350, 100, 100);
+this.Wall = new Wall(game, -1550, -9450, 100, 100);
+this.Wall = new Wall(game, -1550, -9550, 100, 100);
+this.Wall = new Wall(game, -1550, -9650, 100, 100);
+this.Wall = new Wall(game, -1550, -9750, 100, 100);
+this.Wall = new Wall(game, -1550, -9850, 100, 100);
+this.Wall = new Wall(game, -1550, -9950, 100, 100);
+this.Wall = new Wall(game, -1550, -10050, 100, 100);
+this.Wall = new Wall(game, -1550, -10150, 100, 100);
+this.Wall = new Wall(game, -1550, -10250, 100, 100);
+this.Wall = new Wall(game, -1550, -10350, 100, 100);
+this.Wall = new Wall(game, -1550, -10450, 100, 100);
+this.Wall = new Wall(game, -1550, -10550, 100, 100);
+this.Wall = new Wall(game, -1550, -10650, 100, 100);
+this.Wall = new Wall(game, -1550, -10750, 100, 100);
+this.Wall = new Wall(game, -1550, -10850, 100, 100);
+this.Wall = new Wall(game, -1550, -10950, 100, 100);
+this.Wall = new Wall(game, -1550, -11050, 100, 100);
+
+this.Wall = new Wall(game, -1550, -11150, 100, 100);
+this.Wall = new Wall(game, -1550, -11250, 100, 100);
+
+this.Wall = new Wall(game, 650, -9250, 100, 100);
+this.Wall = new Wall(game, 650, -9350, 100, 100);
+this.Wall = new Wall(game, 650, -9450, 100, 100);
+this.Wall = new Wall(game, 650, -9550, 100, 100);
+this.Wall = new Wall(game, 650, -9650, 100, 100);
+this.Wall = new Wall(game, 650, -9750, 100, 100);
+this.Wall = new Wall(game, 650, -9850, 100, 100);
+this.Wall = new Wall(game, 650, -9950, 100, 100);
+this.Wall = new Wall(game, 650, -10050, 100, 100);
+this.Wall = new Wall(game, 650, -10150, 100, 100);
+this.Wall = new Wall(game, 650, -10250, 100, 100);
+this.Wall = new Wall(game, 650, -10350, 100, 100);
+this.Wall = new Wall(game, 650, -10450, 100, 100);
+this.Wall = new Wall(game, 650, -10550, 100, 100);
+this.Wall = new Wall(game, 650, -10650, 100, 100);
+this.Wall = new Wall(game, 650, -10750, 100, 100);
+this.Wall = new Wall(game, 650, -10850, 100, 100);
+this.Wall = new Wall(game, 650, -10950, 100, 100);
+this.Wall = new Wall(game, 650, -11050, 100, 100);
+this.Wall = new Wall(game, 650, -11150, 100, 100);
+this.Wall = new Wall(game, 650, -11250, 100, 100);
+
+this.Wall = new Wall(game, -1450, -11250, 100, 100);
+this.Wall = new Wall(game, -1350, -11250, 100, 100);
+this.Wall = new Wall(game, -1250, -11250, 100, 100);
+this.Wall = new Wall(game, -1150, -11250, 100, 100);
+this.Wall = new Wall(game, -1050, -11250, 100, 100);
+this.Wall = new Wall(game, -850, -11250, 100, 100);
+this.Wall = new Wall(game, -950, -11250, 100, 100);
+this.Wall = new Wall(game, -750, -11250, 100, 100);
+
+this.Wall = new Wall(game, 550, -11250, 100, 100);
+this.Wall = new Wall(game, 450, -11250, 100, 100);
+this.Wall = new Wall(game, 350, -11250, 100, 100);
+this.Wall = new Wall(game, 250, -11250, 100, 100);
+this.Wall = new Wall(game, 150, -11250, 100, 100);
+this.Wall = new Wall(game, 50, -11250, 100, 100);
+this.Wall = new Wall(game, -50, -11250, 100, 100);
+this.Wall = new Wall(game, -150, -11250, 100, 100);
+this.Wall = new Wall(game, -250, -11250, 100, 100);
+
+this.Wall = new Wall(game, -650, -11250, 100, 100);
+this.Wall = new Wall(game, -350, -11250, 100, 100);
+
+this.Wall = new Wall(game, -1050, -9450, 100, 100);
+this.Wall = new Wall(game, -1250, -9450, 100, 100);
+this.Wall = new Wall(game, -1150, -9450, 100, 100);
+this.Wall = new Wall(game, -1250, -9550, 100, 100);
+this.Wall = new Wall(game, -1250, -9650, 100, 100);
+this.Wall = new Wall(game, -1250, -9750, 100, 100);
+this.Wall = new Wall(game, -1250, -10050, 100, 100);
+this.Wall = new Wall(game, -1250, -10150, 100, 100);
+this.Wall = new Wall(game, -1250, -10250, 100, 100);
+this.Wall = new Wall(game, 150, -9450, 100, 100);
+this.Wall = new Wall(game, 250, -9450, 100, 100);
+this.Wall = new Wall(game, 350, -9450, 100, 100);
+this.Wall = new Wall(game, 350, -9550, 100, 100);
+this.Wall = new Wall(game, 350, -9650, 100, 100);
+this.Wall = new Wall(game, 350, -9750, 100, 100);
+this.Wall = new Wall(game, 350, -10050, 100, 100);
+this.Wall = new Wall(game, 350, -10150, 100, 100);
+this.Wall = new Wall(game, 350, -10250, 100, 100);
+this.Wall = new Wall(game, -950, -9450, 100, 100);
+this.Wall = new Wall(game, -750, -9450, 100, 100);
+this.Wall = new Wall(game, -850, -9450, 100, 100);
+this.Wall = new Wall(game, 50, -9450, 100, 100);
+this.Wall = new Wall(game, -50, -9450, 100, 100);
+this.Wall = new Wall(game, -150, -9450, 100, 100);
+this.Wall = new Wall(game, -650, -9450, 100, 100);
+this.Wall = new Wall(game, -250, -9450, 100, 100);
+this.Wall = new Wall(game, -1150, -10050, 100, 100);
+this.Wall = new Wall(game, -1150, -9750, 100, 100);
+this.Wall = new Wall(game, -950, -9750, 100, 100);
+this.Wall = new Wall(game, -1050, -9750, 100, 100);
+this.Wall = new Wall(game, -1050, -10050, 100, 100);
+this.Wall = new Wall(game, -950, -10050, 100, 100);
+this.Wall = new Wall(game, 250, -9750, 100, 100);
+this.Wall = new Wall(game, 150, -9750, 100, 100);
+this.Wall = new Wall(game, 50, -9750, 100, 100);
+this.Wall = new Wall(game, 50, -9850, 100, 100);
+this.Wall = new Wall(game, 50, -9950, 100, 100);
+this.Wall = new Wall(game, 50, -10050, 100, 100);
+this.Wall = new Wall(game, 50, -10150, 100, 100);
+this.Wall = new Wall(game, 50, -10250, 100, 100);
+this.Wall = new Wall(game, -650, -9550, 100, 100);
+this.Wall = new Wall(game, -650, -9650, 100, 100);
+this.Wall = new Wall(game, -650, -9750, 100, 100);
+this.Wall = new Wall(game, -50, -9750, 100, 100);
+this.Wall = new Wall(game, -150, -9750, 100, 100);
+this.Wall = new Wall(game, -250, -9750, 100, 100);
+this.Wall = new Wall(game, -650, -9850, 100, 100);
+this.Wall = new Wall(game, -650, -9950, 100, 100);
+this.Wall = new Wall(game, -650, -10050, 100, 100);
+this.Wall = new Wall(game, -950, -10150, 100, 100);
+this.Wall = new Wall(game, -950, -10250, 100, 100);
+this.Wall = new Wall(game, -250, -9850, 100, 100);
+this.Wall = new Wall(game, -250, -9950, 100, 100);
+this.Wall = new Wall(game, -250, -10050, 100, 100);
+this.Wall = new Wall(game, -250, -10150, 100, 100);
+this.Wall = new Wall(game, -250, -10250, 100, 100);
+this.Wall = new Wall(game, -650, -10150, 100, 100);
+this.Wall = new Wall(game, -650, -10250, 100, 100);
+this.Wall = new Wall(game, 550, -10550, 100, 100);
+this.Wall = new Wall(game, 450, -10550, 100, 100);
+this.Wall = new Wall(game, 350, -10550, 100, 100);
+this.Wall = new Wall(game, 250, -10550, 100, 100);
+this.Wall = new Wall(game, 150, -10550, 100, 100);
+this.Wall = new Wall(game, 50, -10550, 100, 100);
+this.Wall = new Wall(game, 350, -10350, 100, 100);
+this.Wall = new Wall(game, 350, -10450, 100, 100);
+this.Wall = new Wall(game, -250, -10550, 100, 100);
+this.Wall = new Wall(game, -350, -10550, 100, 100);
+this.Wall = new Wall(game, -450, -10550, 100, 100);
+this.Wall = new Wall(game, -550, -10550, 100, 100);
+this.Wall = new Wall(game, -650, -10550, 100, 100);
+this.Wall = new Wall(game, -650, -10450, 100, 100);
+this.Wall = new Wall(game, -650, -10350, 100, 100);
+this.Wall = new Wall(game, -250, -10650, 100, 100);
+this.Wall = new Wall(game, -250, -10750, 100, 100);
+this.Wall = new Wall(game, -250, -10850, 100, 100);
+this.Wall = new Wall(game, -150, -10850, 100, 100);
+this.Wall = new Wall(game, 50, -10850, 100, 100);
+this.Wall = new Wall(game, -50, -10850, 100, 100);
+this.Wall = new Wall(game, 150, -10850, 100, 100);
+this.Wall = new Wall(game, 250, -10850, 100, 100);
+this.Wall = new Wall(game, 350, -10850, 100, 100);
+this.Wall = new Wall(game, -350, -11150, 100, 100);
+this.Wall = new Wall(game, -350, -11050, 100, 100);
+this.Wall = new Wall(game, -350, -10950, 100, 100);
+this.Wall = new Wall(game, -350, -10850, 100, 100);
+this.Wall = new Wall(game, 350, -11150, 100, 100);
+this.Wall = new Wall(game, 150, -10950, 100, 100);
+this.Wall = new Wall(game, -50, -11150, 100, 100);
+this.Wall = new Wall(game, -250, -10950, 100, 100);
+this.Wall = new Wall(game, -750, -10550, 100, 100);
+this.Wall = new Wall(game, -850, -10550, 100, 100);
+this.Wall = new Wall(game, -950, -10550, 100, 100);
+this.Wall = new Wall(game, -1250, -10350, 100, 100);
+this.Wall = new Wall(game, -1250, -10450, 100, 100);
+this.Wall = new Wall(game, -1250, -10550, 100, 100);
+this.Wall = new Wall(game, -1250, -10650, 100, 100);
+this.Wall = new Wall(game, -1250, -10750, 100, 100);
+this.Wall = new Wall(game, -1250, -10850, 100, 100);
+this.Wall = new Wall(game, -1050, -10850, 100, 100);
+this.Wall = new Wall(game, -1150, -10850, 100, 100);
+this.Wall = new Wall(game, -950, -10850, 100, 100);
+this.Wall = new Wall(game, -850, -10850, 100, 100);
+this.Wall = new Wall(game, -750, -10850, 100, 100);
+this.Wall = new Wall(game, -650, -10850, 100, 100);
+this.Wall = new Wall(game, -650, -10950, 100, 100);
+this.Wall = new Wall(game, -650, -11050, 100, 100);
+this.Wall = new Wall(game, -650, -11150, 100, 100);
+this.Wall = new Wall(game, 25, -10775, 50, 50);
+this.Wall = new Wall(game, 175, -10625, 50, 50);
+this.Wall = new Wall(game, 275, -10775, 50, 50);
+this.Wall = new Wall(game, 375, -10625, 50, 50);
+this.Wall = new Wall(game, 575, -10725, 50, 50);
+this.Wall = new Wall(game, 425, -10875, 50, 50);
+this.Wall = new Wall(game, 125, -10475, 50, 50);
+this.Wall = new Wall(game, -325, -10475, 50, 50);
+this.Wall = new Wall(game, -575, -10375, 50, 50);
+this.Wall = new Wall(game, -325, -10175, 50, 50);
+this.Wall = new Wall(game, -575, -10025, 50, 50);
+this.Wall = new Wall(game, -325, -9925, 50, 50);
+this.Wall = new Wall(game, -25, -10025, 50, 50);
+this.Wall = new Wall(game, -175, -10175, 50, 50);
+this.Wall = new Wall(game, -1175, -10225, 50, 50);
+this.Wall = new Wall(game, -975, -10475, 50, 50);
+this.Wall = new Wall(game, -1175, -10575, 50, 50);
+this.Wall = new Wall(game, -975, -10625, 50, 50);
+this.Wall = new Wall(game, -775, -10775, 50, 50);
+this.Wall = new Wall(game, -625, -10625, 50, 50);
+this.Wall = new Wall(game, -375, -10775, 50, 50);
+this.Wall = new Wall(game, -575, -10825, 50, 50);
+this.Wall = new Wall(game, -425, -10975, 50, 50);
+this.Wall = new Wall(game, -575, -11125, 50, 50);
+this.Wall = new Wall(game, -75, -11075, 50, 50);
+this.Wall = new Wall(game, 375, -11075, 50, 50);
+this.Wall = new Wall(game, 125, -11025, 50, 50);
+this.Wall = new Wall(game, 175, -11025, 50, 50);
+this.Wall = new Wall(game, -275, -11175, 50, 50);
+this.Wall = new Wall(game, -125, -11175, 50, 50);
+this.Wall = new Wall(game, -275, -11025, 50, 50);
+this.Wall = new Wall(game, -175, -10925, 50, 50);
+this.Wall = new Wall(game, 75, -10925, 50, 50);
+this.Wall = new Wall(game, 25, -11175, 50, 50);
+this.Wall = new Wall(game, 275, -11175, 50, 50);
+this.Wall = new Wall(game, 225, -10925, 50, 50);
+this.Wall = new Wall(game, 575, -11175, 50, 50);
+this.Wall = new Wall(game, 425, -11175, 50, 50);
+this.Wall = new Wall(game, 375, -9825, 50, 50);
+this.Wall = new Wall(game, 125, -9925, 50, 50);
+this.Wall = new Wall(game, 275, -10075, 50, 50);
+this.Wall = new Wall(game, 125, -10225, 50, 50);
+this.Wall = new Wall(game, -575, -9775, 50, 50);
+this.Wall = new Wall(game, -325, -9725, 50, 50);
+this.Wall = new Wall(game, -575, -9525, 50, 50);
+this.Wall = new Wall(game, -325, -9475, 50, 50);
+this.Wall = new Wall(game, -275, -9525, 50, 50);
+this.Wall = new Wall(game, -125, -9675, 50, 50);
+this.Wall = new Wall(game, 25, -9525, 50, 50);
+this.Wall = new Wall(game, 175, -9675, 50, 50);
+this.Wall = new Wall(game, 275, -9525, 50, 50);
+this.Wall = new Wall(game, -925, -9675, 50, 50);
+this.Wall = new Wall(game, -1025, -9525, 50, 50);
+this.Wall = new Wall(game, -1125, -9675, 50, 50);
+this.Wall = new Wall(game, -1175, -9525, 50, 50);
+this.Wall = new Wall(game, -775, -9525, 50, 50);
+this.Wall = new Wall(game, -875, -9775, 50, 50);
+this.Wall = new Wall(game, -725, -9725, 50, 50);
+this.Wall = new Wall(game, -775, -10475, 50, 50);
+this.Wall = new Wall(game, -725, -10275, 50, 50);
+this.Wall = new Wall(game, -875, -10125, 50, 50);
+this.Wall = new Wall(game, -725, -9925, 50, 50);
+this.Wall = new Wall(game, -975, -9975, 50, 50);
+this.Wall = new Wall(game, -1125, -9825, 50, 50);
+this.Wall = new Wall(game, -1275, -9975, 50, 50);
+this.Wall = new Wall(game, -1125, -10775, 50, 50);
+this.Wall = new Wall(game, -1275, -11025, 50, 50);
+this.Wall = new Wall(game, -1075, -11075, 50, 50);
+this.Wall = new Wall(game, -875, -11025, 50, 50);
+this.Wall = new Wall(game, -725, -10925, 50, 50);
+this.Wall = new Wall(game, -175, -10675, 50, 50);
+this.Wall = new Wall(game, 575, -10325, 50, 50);
+this.Wall = new Wall(game, 425, -10175, 50, 50);
+this.Wall = new Wall(game, 575, -9925, 50, 50);
+this.Wall = new Wall(game, 575, -9675, 50, 50);
+this.Wall = new Wall(game, 425, -9525, 50, 50);
+this.Wall = new Wall(game, 575, -9375, 50, 50);
+this.Wall = new Wall(game, 425, -9225, 50, 50);
+this.Wall = new Wall(game, 275, -9375, 50, 50);
+this.Wall = new Wall(game, 125, -9225, 50, 50);
+this.Wall = new Wall(game, -75, -9375, 50, 50);
+this.Wall = new Wall(game, -25, -9125, 50, 50);
+this.Wall = new Wall(game, -225, -9375, 50, 50);
+this.Wall = new Wall(game, -175, -9025, 50, 50);
+this.Wall = new Wall(game, -225, -8925, 50, 50);
+this.Wall = new Wall(game, -775, -9025, 50, 50);
+this.Wall = new Wall(game, -875, -9125, 50, 50);
+this.Wall = new Wall(game, -1025, -9375, 50, 50);
+this.Wall = new Wall(game, -1225, -9225, 50, 50);
+this.Wall = new Wall(game, -1475, -9375, 50, 50);
+this.Wall = new Wall(game, -1325, -9575, 50, 50);
+this.Wall = new Wall(game, -1475, -9775, 50, 50);
+this.Wall = new Wall(game, -1325, -10725, 50, 50);
+this.Wall = new Wall(game, -1475, -10525, 50, 50);
+this.Wall = new Wall(game, -1325, -10325, 50, 50);
+this.Wall = new Wall(game, -1475, -10225, 50, 50);
+this.Wall = new Wall(game, -1325, -10025, 50, 50);
+
+
+this.Wall = new DamageZone6(game, null, -1050, -9450, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -1250, -9450, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -1150, -9450, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -1250, -9550, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -1250, -9650, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -1250, -9750, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -1250, -10050, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -1250, -10150, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -1250, -10250, 100, 100, true);
+this.Wall = new DamageZone6(game, null, 150, -9450, 100, 100, true);
+this.Wall = new DamageZone6(game, null, 250, -9450, 100, 100, true);
+this.Wall = new DamageZone6(game, null, 350, -9450, 100, 100, true);
+this.Wall = new DamageZone6(game, null, 350, -9550, 100, 100, true);
+this.Wall = new DamageZone6(game, null, 350, -9650, 100, 100, true);
+this.Wall = new DamageZone6(game, null, 350, -9750, 100, 100, true);
+this.Wall = new DamageZone6(game, null, 350, -10050, 100, 100, true);
+this.Wall = new DamageZone6(game, null, 350, -10150, 100, 100, true);
+this.Wall = new DamageZone6(game, null, 350, -10250, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -950, -9450, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -750, -9450, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -850, -9450, 100, 100, true);
+this.Wall = new DamageZone6(game, null, 50, -9450, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -50, -9450, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -150, -9450, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -650, -9450, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -250, -9450, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -1150, -10050, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -1150, -9750, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -950, -9750, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -1050, -9750, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -1050, -10050, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -950, -10050, 100, 100, true);
+this.Wall = new DamageZone6(game, null, 250, -9750, 100, 100, true);
+this.Wall = new DamageZone6(game, null, 150, -9750, 100, 100, true);
+this.Wall = new DamageZone6(game, null, 50, -9750, 100, 100, true);
+this.Wall = new DamageZone6(game, null, 50, -9850, 100, 100, true);
+this.Wall = new DamageZone6(game, null, 50, -9950, 100, 100, true);
+this.Wall = new DamageZone6(game, null, 50, -10050, 100, 100, true);
+this.Wall = new DamageZone6(game, null, 50, -10150, 100, 100, true);
+this.Wall = new DamageZone6(game, null, 50, -10250, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -650, -9550, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -650, -9650, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -650, -9750, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -50, -9750, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -150, -9750, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -250, -9750, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -650, -9850, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -650, -9950, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -650, -10050, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -950, -10150, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -950, -10250, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -250, -9850, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -250, -9950, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -250, -10050, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -250, -10150, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -250, -10250, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -650, -10150, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -650, -10250, 100, 100, true);
+this.Wall = new DamageZone6(game, null, 550, -10550, 100, 100, true);
+this.Wall = new DamageZone6(game, null, 450, -10550, 100, 100, true);
+this.Wall = new DamageZone6(game, null, 350, -10550, 100, 100, true);
+this.Wall = new DamageZone6(game, null, 250, -10550, 100, 100, true);
+this.Wall = new DamageZone6(game, null, 150, -10550, 100, 100, true);
+this.Wall = new DamageZone6(game, null, 50, -10550, 100, 100, true);
+this.Wall = new DamageZone6(game, null, 350, -10350, 100, 100, true);
+this.Wall = new DamageZone6(game, null, 350, -10450, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -250, -10550, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -350, -10550, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -450, -10550, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -550, -10550, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -650, -10550, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -650, -10450, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -650, -10350, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -250, -10650, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -250, -10750, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -250, -10850, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -150, -10850, 100, 100, true);
+this.Wall = new DamageZone6(game, null, 50, -10850, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -50, -10850, 100, 100, true);
+this.Wall = new DamageZone6(game, null, 150, -10850, 100, 100, true);
+this.Wall = new DamageZone6(game, null, 250, -10850, 100, 100, true);
+this.Wall = new DamageZone6(game, null, 350, -10850, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -350, -11150, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -350, -11050, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -350, -10950, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -350, -10850, 100, 100, true);
+this.Wall = new DamageZone6(game, null, 350, -11150, 100, 100, true);
+this.Wall = new DamageZone6(game, null, 150, -10950, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -50, -11150, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -250, -10950, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -750, -10550, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -850, -10550, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -950, -10550, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -1250, -10350, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -1250, -10450, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -1250, -10550, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -1250, -10650, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -1250, -10750, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -1250, -10850, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -1050, -10850, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -1150, -10850, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -950, -10850, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -850, -10850, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -750, -10850, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -650, -10850, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -650, -10950, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -650, -11050, 100, 100, true);
+this.Wall = new DamageZone6(game, null, -650, -11150, 100, 100, true);
+this.Wall = new DamageZone6(game, null, 25, -10775, 50, 50, true);
+this.Wall = new DamageZone6(game, null, 175, -10625, 50, 50, true);
+this.Wall = new DamageZone6(game, null, 275, -10775, 50, 50, true);
+this.Wall = new DamageZone6(game, null, 375, -10625, 50, 50, true);
+this.Wall = new DamageZone6(game, null, 575, -10725, 50, 50, true);
+this.Wall = new DamageZone6(game, null, 425, -10875, 50, 50, true);
+this.Wall = new DamageZone6(game, null, 125, -10475, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -325, -10475, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -575, -10375, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -325, -10175, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -575, -10025, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -325, -9925, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -25, -10025, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -175, -10175, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -1175, -10225, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -975, -10475, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -1175, -10575, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -975, -10625, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -775, -10775, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -625, -10625, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -375, -10775, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -575, -10825, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -425, -10975, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -575, -11125, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -75, -11075, 50, 50, true);
+this.Wall = new DamageZone6(game, null, 375, -11075, 50, 50, true);
+this.Wall = new DamageZone6(game, null, 125, -11025, 50, 50, true);
+this.Wall = new DamageZone6(game, null, 175, -11025, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -275, -11175, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -125, -11175, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -275, -11025, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -175, -10925, 50, 50, true);
+this.Wall = new DamageZone6(game, null, 75, -10925, 50, 50, true);
+this.Wall = new DamageZone6(game, null, 25, -11175, 50, 50, true);
+this.Wall = new DamageZone6(game, null, 275, -11175, 50, 50, true);
+this.Wall = new DamageZone6(game, null, 225, -10925, 50, 50, true);
+this.Wall = new DamageZone6(game, null, 575, -11175, 50, 50, true);
+this.Wall = new DamageZone6(game, null, 425, -11175, 50, 50, true);
+this.Wall = new DamageZone6(game, null, 375, -9825, 50, 50, true);
+this.Wall = new DamageZone6(game, null, 125, -9925, 50, 50, true);
+this.Wall = new DamageZone6(game, null, 275, -10075, 50, 50, true);
+this.Wall = new DamageZone6(game, null, 125, -10225, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -575, -9775, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -325, -9725, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -575, -9525, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -325, -9475, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -275, -9525, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -125, -9675, 50, 50, true);
+this.Wall = new DamageZone6(game, null, 25, -9525, 50, 50, true);
+this.Wall = new DamageZone6(game, null, 175, -9675, 50, 50, true);
+this.Wall = new DamageZone6(game, null, 275, -9525, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -925, -9675, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -1025, -9525, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -1125, -9675, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -1175, -9525, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -775, -9525, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -875, -9775, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -725, -9725, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -775, -10475, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -725, -10275, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -875, -10125, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -725, -9925, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -975, -9975, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -1125, -9825, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -1275, -9975, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -1125, -10775, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -1275, -11025, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -1075, -11075, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -875, -11025, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -725, -10925, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -175, -10675, 50, 50, true);
+this.Wall = new DamageZone6(game, null, 575, -10325, 50, 50, true);
+this.Wall = new DamageZone6(game, null, 425, -10175, 50, 50, true);
+this.Wall = new DamageZone6(game, null, 575, -9925, 50, 50, true);
+this.Wall = new DamageZone6(game, null, 575, -9675, 50, 50, true);
+this.Wall = new DamageZone6(game, null, 425, -9525, 50, 50, true);
+this.Wall = new DamageZone6(game, null, 575, -9375, 50, 50, true);
+this.Wall = new DamageZone6(game, null, 425, -9225, 50, 50, true);
+this.Wall = new DamageZone6(game, null, 275, -9375, 50, 50, true);
+this.Wall = new DamageZone6(game, null, 125, -9225, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -75, -9375, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -25, -9125, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -225, -9375, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -175, -9025, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -225, -8925, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -775, -9025, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -875, -9125, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -1025, -9375, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -1225, -9225, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -1475, -9375, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -1325, -9575, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -1475, -9775, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -1325, -10725, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -1475, -10525, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -1325, -10325, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -1475, -10225, 50, 50, true);
+this.Wall = new DamageZone6(game, null, -1325, -10025, 50, 50, true);
+
+
+this.arenaData.values.flags |= ArenaFlags.cantUseCheats;
+
+    }
+
+    public spawnPlayer(tank: TankBody, client: Client) {
+        const xOffset = (Math.random() - 0.5) * baseSize;
+        const yOffset = (Math.random() - 0.5) * baseSize;
+
+        const base = this.blueTeamBase;
+
+        tank.relationsData.values.team = base.relationsData.values.team;
+        tank.styleData.values.color = base.styleData.values.color;
+        tank.positionData.values.x = base.positionData.values.x + xOffset;
+        tank.positionData.values.y = base.positionData.values.y + yOffset;
+        tank.setTank(Tank.ObbyTank);
+
+        this.playerTeamMap.set(client, base);
+        if (client.camera) {
+            client.camera.relationsData.team = tank.relationsData.values.team;
+        }
+    }
+}

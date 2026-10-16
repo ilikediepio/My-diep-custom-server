@@ -137,7 +137,7 @@ export default class BMultiAutoRocket extends MultiAutoBase {
         const angle = (i / count) * 2 * Math.PI;
 
         const turret = new BMultiAutoRocket(owner);
-        turret.setParent(owner);
+        //turret.setParent(owner);
 
         // Position offset from the tank's center
         turret.positionData.values.x = owner.positionData.values.x + Math.cos(angle) * radius;

@@ -16,7 +16,7 @@
     along with this program. If not, see <https://www.gnu.org/licenses/>
 */
 
-import { Color, NameFlags, StyleFlags, AdminFlags, Tank } from "../../Const/Enums";
+import { Color, NameFlags, StyleFlags, AdminFlags, PhysicsFlags, Tank } from "../../Const/Enums";
 import ArenaEntity from "../../Native/Arena";
 import { CameraEntity } from "../../Native/Camera";
 import { AI, AIState, Inputs } from "../AI";
@@ -52,6 +52,7 @@ export default class AcDominator extends TankBody {
 
         this.relationsData.values.team = arena;
         this.physicsData.values.size = AcDominator.SIZE;
+        this.physicsData.values.flags |= PhysicsFlags.fixedSize;
         // TODO(ABC):
         // Add setTeam method for this
         this.styleData.values.color = Color.Neutral;
@@ -113,17 +114,22 @@ export default class AcDominator extends TankBody {
     }
 
     public tick(tick: number) {
-        if (!this.barrels.length) return super.tick(tick)
+        if (!this.barrels.length) return super.tick(tick);
+
         this.ai.aimSpeed = this.barrels[0].bulletAccel;
         this.inputs = this.ai.inputs;
 
         if (this.ai.state === AIState.idle) {
             const angle = this.positionData.values.angle + this.ai.passiveRotation;
-            const mag = Math.sqrt((this.inputs.mouse.x - this.positionData.values.x) ** 2 + (this.inputs.mouse.y - this.positionData.values.y) ** 2);
+            const mag = Math.sqrt(
+                (this.inputs.mouse.x - this.positionData.values.x) **2 +
+                (this.inputs.mouse.y - this.positionData.values.y) **2
+            );
+
             this.inputs.mouse.set({
                 x: this.positionData.values.x + Math.cos(angle) * mag,
-                y: this.positionData.values.y + Math.sin(angle) * mag
-            });
+                y : this.positionData.values.y + Math.sin(angle) * mag
+                });
         }
 
         super.tick(tick);

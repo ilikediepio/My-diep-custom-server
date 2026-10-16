@@ -26,7 +26,9 @@ import FFAArena from "./Gamemodes/FFA";
 import Teams2Arena from "./Gamemodes/Team2";
 import SandboxArena from "./Gamemodes/Sandbox";
 import BlackHoleArena from "./Gamemodes/BlackHole";
-import { ClientBound } from "./Const/Enums";
+import { ClientBound, AdminFlags } from "./Const/Enums";
+import { Entity } from "./Native/Entity";
+import LivingEntity from "./Entity/Live";
 import Teams4Arena from "./Gamemodes/Team4";
 import DominationArena from "./Gamemodes/Domination";
 import MothershipArena from "./Gamemodes/Mothership";
@@ -45,6 +47,10 @@ import NexusArena from "./Gamemodes/Nexus";
 import SeigeArena from "./Gamemodes/Seige";
 import DominationTestingArena2 from "./Gamemodes/DomTesting";
 import PvPArena from "./Gamemodes/PvP";
+import ObbyArena from "./Gamemodes/Obby";
+
+import LagPrevention from "./LagPrevention";
+import { performance } from "node:perf_hooks";
 
 /**
  * WriterStream that broadcasts to all of the game's WebSockets.
@@ -66,7 +72,7 @@ class WSSWriterStream extends Writer {
     }
 }
 
-type DiepGamemodeID = "ffa" | "sandbox" | "teams" | "4teams" | "mot" | "dom" | "maze" | "tag" | "survival" | "testing" | "spike" | "domtest" | "jungle" | "factest" | "ball" | "ACescape" | "barrier" | "atmg" | "nexus" | "seige" | "blackhole" | "events" | "domtest2" | "pvp";
+type DiepGamemodeID = "ffa" | "sandbox" | "teams" | "4teams" | "mot" | "dom" | "maze" | "tag" | "survival" | "testing" | "spike" | "domtest" | "jungle" | "factest" | "ball" | "ACescape" | "barrier" | "atmg" | "nexus" | "seige" | "blackhole" | "events" | "domtest2" | "pvp" | "obby";
 
 const GamemodeToArenaClass: Record<DiepGamemodeID, (typeof ArenaEntity) | null> & { "*": typeof ArenaEntity }= {
     "ffa": FFAArena,
@@ -93,7 +99,8 @@ const GamemodeToArenaClass: Record<DiepGamemodeID, (typeof ArenaEntity) | null> 
     "blackhole": BlackHoleArena,
     "events": EventsArena,
     "domtest2": DominationTestingArena2,
-    "pvp": PvPArena
+    "pvp": PvPArena,
+    "obby": ObbyArena
 }
 
 /**
@@ -102,8 +109,10 @@ const GamemodeToArenaClass: Record<DiepGamemodeID, (typeof ArenaEntity) | null> 
 export default class GameServer {
     /** Stores total player count. */
     public static globalPlayerCount = 0;
-    /** Whether or not the game server is running. */
+    /** Whether or not the game server is running and how laggy it is. */
     public running = true;
+    public lagPrevention!: LagPrevention;
+    public lagProtectionEnabled = true;
     /** The gamemode the game is running. */
     public gamemode: DiepGamemodeID;
     /** The arena's display name. */
@@ -121,23 +130,23 @@ export default class GameServer {
     /** the current banned players */
     public bans: { name: string; expiresAt: number }[] = [];
 
-    private adminBanPassword: string | null = null;
-    private adminBanPasswordExpiresAt: number = 0;
+    //private adminBanPassword: string | null = null;
+    //private adminBanPasswordExpiresAt: number = 0;
 
-    public setAdminBanPassword(password: string, expiresAt: number) {
-    this.adminBanPassword = password;
-    this.adminBanPasswordExpiresAt = expiresAt;
-}
+    //public setAdminBanPassword(password: string, expiresAt: number) {
+    //this.adminBanPassword = password;
+    //this.adminBanPasswordExpiresAt = expiresAt;
+//}
 
-public validateAdminBanPassword(password: string): boolean {
-    const now = Date.now();
-
-    return (
-        this.adminBanPassword !== null &&
-        now < this.adminBanPasswordExpiresAt &&
-        password === this.adminBanPassword
-    );
-}
+//public validateAdminBanPassword(password: string): boolean {
+//    const now = Date.now();
+//
+//    return (
+//        this.adminBanPassword !== null &&
+//        now < this.adminBanPasswordExpiresAt &&
+//        password === this.adminBanPassword
+//    );
+//}
     
     /** The interval timer of the tick loop. */
     private _tickInterval: NodeJS.Timeout;
@@ -192,6 +201,42 @@ public validateAdminBanPassword(password: string): boolean {
             
             return _clear.call(this.clients);
         }
+
+        this.lagPrevention = new LagPrevention(
+        (reason) => {
+            console.warn(`[LagPrevention] ${reason}`);
+    
+            let killed = 0;
+    
+            for (let id = 0; id <= this.entities.lastId; ++id) {
+                const entity = this.entities.inner[id];
+    
+                if (
+                    Entity.exists(entity) &&
+                    entity instanceof LivingEntity &&
+                    !(entity.flags?.adminFlags & AdminFlags.immuneToKillCommand)
+                ) {
+                    entity.healthData.health = 0;
+                    ++killed;
+                }
+            }
+            this.broadcast()
+                .u8(ClientBound.Notification)
+                .stringNT("!The server was overloaded, all entities were killed!")
+                .u32(0xFFCC00)
+                .float(200000)
+                .stringNT("")
+                .send();
+            console.log(`[LagPrevention] Killed ${killed} entities`);
+        },
+        {
+            tpsThreshold: 10,
+            windowMs: 110,
+            minSamples: 2,
+            cooldownMs: 2000,
+            recoverMultiplier: 1.5
+        }
+    );
 
         this.entities = new EntityManager(this);
         this.tick = 0;
@@ -255,12 +300,48 @@ public validateAdminBanPassword(password: string): boolean {
         }, config.mspt);
     }
 
-    /** Ticks the game. */
-    private tickLoop() {
-        
-        this.tick += 1;
-        this.entities.tick(this.tick);
+//    private killAllEntities() {
+//        let killed = 0;
+//    
+//        for (let id = 0; id <= this.entities.lastId; ++id) {
+//            const entity = this.entities.inner[id];
+//    
+//            if (
+//                Entity.exists(entity) &&
+//                entity instanceof LivingEntity &&
+//                !(entity.flags?.adminFlags & AdminFlags.immuneToKillCommand)
+//            ) {
+//                entity.healthData.health = 0;
+//                killed++;
+//            }
+//        }
+//    
+//        console.log(
+//            `[LagPrevention] ${this.gamemode}: killed ${killed} entities`
+//        );
+//    }
 
-        for (const client of this.clients) client.tick(this.tick);
+    /** Ticks the game. */
+private tickLoop() {
+
+    const start = performance.now();
+
+    this.tick += 1;
+
+    this.entities.tick(this.tick);
+
+    for (const client of this.clients) {
+        client.tick(this.tick);
     }
+
+    const tickTime = performance.now() - start;
+    
+//    if (this.lagProtectionEnabled && tickTime > 100) {
+//        console.warn(
+//            `[LagPrevention] ${this.gamemode} tick took ${tickTime.toFixed(1)}ms`     // active system
+//        );
+//   
+//        this.killAllEntities();
+//    }
+  }
 }

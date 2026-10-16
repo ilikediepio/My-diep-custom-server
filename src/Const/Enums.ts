@@ -219,6 +219,11 @@ export const enum Tank {
     FallenCrasher = 327,
     HexadecagonBoss  = 328,
     SeigeGuardian = 330,
+    ObbyTank      = 354,
+    ObbyObsticle1 = 355,
+    ObbyObsticle2 = 356,
+    ObbyObsticle3 = 357,
+    ObbyTank2 = 358,
 }
 
 /**
@@ -353,9 +358,10 @@ export const enum PhysicsFlags {
     isSolidWall             = 1 << 4,
     onlySameOwnerCollision  = 1 << 5,
     isBase                  = 1 << 6,
-    _unknown1               = 1 << 7,
-    canEscapeArena          = 1 << 8,
-    enableGravity           = 1 << 9
+    _unknown1               = 1 << 7, // probably a placeholder flag
+    canEscapeArena          = 1 << 8, // does noting, for future update
+    enableGravity           = 1 << 9,  // does noting, for future update
+    fixedSize               = 1 << 10
 }
 /**
  * The flag names for the barrel field group.
@@ -374,7 +380,9 @@ export const enum HealthFlags {
  */
 export const enum NameFlags {
     hiddenName = 1 << 0,
-    highlightedName = 1 << 1
+    highlightedName = 1 << 1,
+    redName = 1 << 2,
+    blueName = 1 << 3
 }
 /**
  * The flag names for admin-related control. (sutch as super bosses)

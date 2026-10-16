@@ -24,21 +24,25 @@ import { NameGroup } from "../../Native/FieldGroups";
 
 export default class Ball extends ObjectEntity {
 
-    constructor(game: GameServer) {
+    constructor(game: GameServer, x: number, y: number) {
         super(game);
 
+        this.positionData.values.x = x;
+        this.positionData.values.y = y;
+
         this.nameData = new NameGroup(this);
-        this.nameData.values.name = "Football";
+        this.nameData.values.name = "Ball";
 
         this.physicsData.values.sides = 1;
         this.styleData.values.color = Color.White;
-        this.physicsData.values.size = 150;
-        this.physicsData.values.absorbtionFactor = 0.25;
+        this.physicsData.values.size = 100;
+        this.physicsData.values.absorbtionFactor = 0.5;
 
         this.physicsData.values.flags |=
-            PhysicsFlags.isBase |
-            PhysicsFlags.noOwnTeamCollision;
+            PhysicsFlags.isBase// |
+            //PhysicsFlags.noOwnTeamCollision;
 
-        this.relationsData.values.team = this;
+        //this.relationsData.values.team = this;
+        this.relationsData.values.team = null;
     }
 }

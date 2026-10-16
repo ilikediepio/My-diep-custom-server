@@ -85,7 +85,12 @@ import BounceWall from "../Entity/Misc/BounceWall";
 import { SpawnCategory, SPAWN_LIMITS } from "./SpawnLimits";
 import { getSpawnCategory } from "./SpawnCategoryResolver";
 import { bannedClients } from "../index";
+import DebugEntity from "../Entity/Misc/DebugEntity";
 
+
+export const SHINY_PASSWORD = process.env.SHINY_PASSWORD;
+export const SHINY_PLUS_PASSWORD = process.env.SHINY_PLUS_PASSWORD;
+export const MOD_BAN_PASSWORD = process.env.MOD_BAN_PASSWORD;
 
 const RELATIVE_POS_REGEX = new RegExp(/~(-?\d+)?/);
 const spawnCooldowns = new WeakMap<Client, Map<SpawnCategory, number>>();
@@ -223,6 +228,7 @@ export const enum CommandID {
     adminBanlist = "admin_banlist",
     adminKick = "admin_kick",
     fastKick = "fast_kick",
+    modBan = "mod_ban",
 }
 
 export interface CommandDefinition {
@@ -477,7 +483,8 @@ export const commandDefinitions = {
     },
     admin_shiny_all: {
         id: CommandID.adminShinyAll,
-        description: "Sets everyones tank to shiny",
+        usage: "[shiny+ password]",
+        description: "Sets everyones tank to shiny (only level 3 access can do this)",
         permissionLevel: AccessLevel.FullAccess,
         isCheat: false
     },
@@ -545,7 +552,7 @@ export const commandDefinitions = {
     },
     admin_shiny_player: {
         id: CommandID.adminShinyPlayer,
-        usage: "[player name]",
+        usage: "[player name], [shiny+ password]",
         description: "Sets someone's tank to shiny",
         permissionLevel: AccessLevel.FullAccess,
         isCheat: true
@@ -604,6 +611,13 @@ export const commandDefinitions = {
         permissionLevel: AccessLevel.FullAccess,
         isCheat: false
     },
+    mod_ban: {
+        id: CommandID.modBan,
+        usage: "[player IP]",
+        description: "Kicks a player from the game",
+        permissionLevel: AccessLevel.FullAccess,
+        isCheat: false
+    },
 
 } as Record<CommandID, CommandDefinition>
 
@@ -616,19 +630,47 @@ export const commandCallbacks = {
         player.setTank(tankDef.id);
     },
     game_set_level: (client: Client, levelArg: string) => {
-        const level = parseInt(levelArg);
+        const level = Number(levelArg);
+    
         const player = client.camera?.cameraData.player;
-        if (isNaN(level) || !Entity.exists(player) || !(player instanceof TankBody)) return;
-        const finalLevel = client.accessLevel == AccessLevel.BetaAccess ? level : Math.min(maxPlayerLevel, level);
+    
+        if (
+            !Number.isSafeInteger(level) ||
+            level < 0 ||
+            !Entity.exists(player) ||
+            !(player instanceof TankBody)
+        ) return;
+    
+        const finalLevel =
+            client.accessLevel == AccessLevel.BetaAccess
+                ? level
+                : Math.min(maxPlayerLevel, level);
+    
         client.camera?.setLevel(finalLevel);
     },
+    //game_set_score: (client: Client, scoreArg: string) => {
+    //    const score = parseInt(scoreArg);
+    //    const camera = client.camera?.cameraData;
+    //    const player = client.camera?.cameraData.player;
+    //    if (isNaN(score) || score > Number.MAX_SAFE_INTEGER || score < Number.MIN_SAFE_INTEGER || !Entity.exists(player) || !(player instanceof TankBody) || !camera) return;
+    //    camera.score = score;
+    //},
     game_set_score: (client: Client, scoreArg: string) => {
-        const score = parseInt(scoreArg);
-        const camera = client.camera?.cameraData;
-        const player = client.camera?.cameraData.player;
-        if (isNaN(score) || score > Number.MAX_SAFE_INTEGER || score < Number.MIN_SAFE_INTEGER || !Entity.exists(player) || !(player instanceof TankBody) || !camera) return;
-        camera.score = score;
-    },
+    const score = Number(scoreArg);
+
+    const camera = client.camera?.cameraData;
+    const player = camera?.player;
+
+    if (
+        !Number.isSafeInteger(score) ||
+        score < 0 ||
+        !camera ||
+        !Entity.exists(player) ||
+        !(player instanceof TankBody)
+    ) return;
+
+    camera.score = score;
+},
 br: (client: Client, ...args: string[]) => {
     if (!client.chatToggled) return;
 
@@ -636,6 +678,7 @@ br: (client: Client, ...args: string[]) => {
     const now = Date.now();
     const cooldown = 3000;
     const lastChatTime = (client as any).lastChatTime ?? 0;
+
     if (now - lastChatTime < cooldown) {
         const remaining = Math.ceil((cooldown - (now - lastChatTime)) / 1000);
         client.notify(
@@ -645,135 +688,30 @@ br: (client: Client, ...args: string[]) => {
         );
         return;
     }
+
     (client as any).lastChatTime = now;
 
     // ======= Build message =======
     const message = args.join(" ").trim();
     if (!message) return;
 
-    let hadBadWord = false;
-    let suspiciousCount = (client as any).suspiciousCount ?? 0;
-
-    // =========================
-    // Chat filter
-    // =========================
-    const badWords = ["arse", "arsehead", "arsehole", "ass", "asshole", "bastard", "bitch", "bollocks", "brotherfucker", "bugger", "bullshit", "brotherfucker", "childfucker", "child-fucker", "cock", "cocksucker", "cock-sucker", "crap", "cunt", "dammit", "damned", "dick", "dick-head", "dickhead", "dumb-ass", "dumbass", "dyke", "faggot", "fag", "father-fucker", "fatherfucker", "fuck", "fucked", "fucker", "fucking", "goddammit", "goddamn", "goddamned", "goddamnit", "godsdamn", "horseshit", "jack-ass", "jackass", "kike", "mother-fucker", "motherfucker", "nigga", "nigra", "nigger", "pigfucker", "piss", "prick", "pussy", "shit", "shite", "sisterfuck", "sister-fuck", "sisterfucker", "sister-fucker", "slut", "spastic", "tranny", "twat", "wanker", "fanny", "fkuk", "fkuc", "fukc", "fock", "fok"]; // please cover up if ever showing code!
-
-    const leetMap: Record<string, string> = {
-        "!":"i","1":"i","(": "i",")":"i","[":"i","]":"i","/":"i","\\":"i",
-        "3":"e","4":"a","@":"a","$":"s","5":"s","7":"t","+":"t","0":"o","*":"o"
-    };
-
-    const normalizeWord = (word: string): string => {
-        let normalized = "";
-        for (const char of word.toLowerCase()) {
-            normalized += leetMap[char] ?? char;
-        }
-        normalized = normalized.replace(/[^a-z0-9]/g, "");
-        normalized = normalized.replace(/(.)\1+/g, "$1"); // collapse repeated letters
-        return normalized;
-    };
-
-    // Suspicion / typo checks
-    const isSwappedLetters = (word: string, bad: string): boolean => {
-        if (word.length !== bad.length) return false;
-        const diff: number[] = [];
-        for (let i = 0; i < word.length; i++) if (word[i] !== bad[i]) diff.push(i);
-        if (diff.length !== 2) return false;
-        const [a, b] = diff;
-        return word[a] === bad[b] && word[b] === bad[a];
-    };
-
-    const isOneLetterMissing = (word: string, bad: string): boolean => {
-        if (Math.abs(word.length - bad.length) !== 1) return false;
-        let i = 0, j = 0, differences = 0;
-        while (i < word.length && j < bad.length) {
-            if (word[i] !== bad[j]) {
-                differences++;
-                if (differences > 1) return false;
-                if (word.length > bad.length) i++; else j++;
-            } else { i++; j++; }
-        }
-        return true;
-    };
-
-    const isOneLetterReplaced = (word: string, bad: string): boolean => {
-        if (word.length !== bad.length) return false;
-        let differences = 0;
-        for (let i = 0; i < word.length; i++) {
-            if (word[i] !== bad[i]) differences++;
-            if (differences > 1) return false;
-        }
-        return differences === 1;
-    };
-
-    const rawWords = message.split(/\s+/);
-
-            // ======= Whitelist certain words =======
-const whitelist = ["fork", "asa", "shirt", "bench", "ash", "deck", "cork", "ok", "this", "game", "is"];
-
-for (const rawWord of rawWords) {
-    const word = normalizeWord(rawWord);
-    if (!word) continue;
-
-    // ======= Skip whitelisted words entirely =======
-        // Skip everything for whitelist
-    if (whitelist.includes(word)) continue;
-
-    for (const bad of badWords) {
-        const badNorm = normalizeWord(bad);
-
-        // Exact match ? MUTE
-        if (word === badNorm) {
-            hadBadWord = true;
-            break;
-        }
-
-        // Suspicion checks
-        let susChecks = 0;
-        if (word.length > 2 && isSwappedLetters(word, badNorm)) susChecks++;
-        if (isOneLetterMissing(word, badNorm)) susChecks++;
-        if (isOneLetterReplaced(word, badNorm)) susChecks++;
-
-        if (susChecks === 1 && word.length < badNorm.length) {
-            hadBadWord = true;
-            break;
-        } else if (susChecks > 0) {
-            suspiciousCount++;
-            console.log(`? Suspicious word from ${client.toString()}: "${rawWord}" (close to "${bad}")`);
-            client.notify(`? Warning: Suspicious language detected (${suspiciousCount}/3)`, 0xFFA500, 3000);
-        }
-    }
-
-    if (hadBadWord) break;
-}
-    (client as any).suspiciousCount = suspiciousCount;
-
-    // ======= Enforcement =======
-    if (hadBadWord) {
-        client.accessLevel = AccessLevel.NoAccess;
-        console.log(`Client ${client.toString()} used a blocked word and has been muted.`);
-        return;
-    }
-
-    if (suspiciousCount >= 3) {
-        client.accessLevel = AccessLevel.NoAccess;
-        console.log(`Client ${client.toString()} muted after 3 suspicious words.`);
-        client.notify("You have been muted for repeated suspicious language.", 0xFF0000, 4000);
-        return;
-    }
-
-    // ======= Send broadcast =======
+    // ======= Get sender name =======
     const raw = client.toString();
     const match = raw.match(/name="([^"]+)"/);
     const senderName = match?.[1] ?? "Player";
 
+    // ======= Message duration scaling =======
     const base = 2000;
     const max = 10000;
     const growth = 2500;
     const lengthFactor = Math.log2(message.length + 1);
-    const duration = Math.min(max, Math.max(base, base + growth * lengthFactor));
 
+    const duration = Math.min(
+        max,
+        Math.max(base, base + growth * lengthFactor)
+    );
+
+    // ======= Broadcast =======
     client.game?.broadcast()
         .u8(ClientBound.Notification)
         .stringNT(`${senderName}: ${message}`)
@@ -1281,19 +1219,21 @@ game_tp_player: (
     game_godmode: (client: Client, activeArg?: string) => {
         const player = client.camera?.cameraData.player;
         if (!Entity.exists(player) || !(player instanceof TankBody)) return;
-
+    
         switch (activeArg) {
             case "on":
                 player.setInvulnerability(true);
                 break;
+    
             case "off":
                 player.setInvulnerability(false);
                 break;
+    
             default:
                 player.setInvulnerability(!player.isInvulnerable);
                 break;
         }
-
+    
         const godmodeState = player.isInvulnerable ? "ON" : "OFF";
         return `God mode: ${godmodeState}`;
     },
@@ -1545,6 +1485,60 @@ fast_kick: (client: Client, ...args: string[]) => {
         .send();
 },
 
+mod_ban: (client: Client, ...args: string[]) => {
+    const game = client.game;
+    if (!game) return;
+
+    const ip = args[0];
+    if (!ip) {
+        console.log("Usage: [player IP]");
+        return;
+    }
+
+    let kickedCount = 0;
+    const kickedNames: string[] = [];
+
+    for (const c of game.clients) {
+        const clientIP = c.ws?.getUserData?.().ipAddress;
+
+        if (clientIP === ip) {
+            if (c.accessLevel === AccessLevel.FullAccess) continue;
+
+            try {
+                const raw = c.toString();
+                const match = raw.match(/name="([^"]+)"/);
+                const name = match?.[1] ?? "Unknown";
+
+                kickedNames.push(name);
+
+                c.ws?.end?.(1000, "Kicked");
+                c.ws?.close?.();
+
+                kickedCount++;
+            } catch (err) {
+                console.log("Kick error:", err);
+            }
+        }
+    }
+
+    console.log(`Kicked ${kickedCount} client(s) with IP ${ip}`);
+
+    const message =
+        kickedNames.length === 1
+            ? `${kickedNames[0]} has been kicked!`
+            : kickedNames.length > 1
+                ? `${kickedNames.join(", ")} have been kicked!`
+                : "No players were kicked.";
+
+    game.broadcast()
+        .u8(ClientBound.Notification)
+        .stringNT(message)
+        .u32(0xFF8800)
+        .float(4000)
+        .stringNT("")
+        .send();
+},
+
     admin_summon: (client: Client, entityArg: string, countArg?: string, xArg?: string, yArg?: string) => {
         const count = countArg ? parseInt(countArg) : 1;
         let x = parseInt(xArg || "0", 10);
@@ -1618,14 +1612,13 @@ const entityMap = new Map<string, new (...args: any[]) => ObjectEntity>([
     ["sapen", ShinyAlphaPentagon],
     ["sahex", ShinyAlphaHexagon],
     ["scr", ShinyCrasher],
-    ["ball", Ball],
     ["fcr", FallenCrasher],
     ["l45", XPSquare],
     ["fd", FallenDodger],
-    ["efd", EnragedFallenDodger], // herere
-    ["xau", xAura],
-//    ["wl", Wall], very bugged
-//    ["bwl", BounceWall], very bugged
+    ["efd", EnragedFallenDodger],
+    ["ball", Ball],
+//    ["wl", Wall], very bugged, make super_admin instead of admin
+//    ["bwl", BounceWall], very bugged, make super_admin instead of admin
 ]);
 
 const TEntity = entityMap.get(entityArg);
@@ -1694,7 +1687,8 @@ const entityMap = new Map<string, new (...args: any[]) => ObjectEntity>([
     ["xbh", xBlackHole],
     ["ims", ImmortalSnail],
     ["xau", xAura],
-    ["dop", DestroyerOfPlayers]
+    ["dop", DestroyerOfPlayers],
+    ["bug", DebugEntity]
 ]);
 
 const TEntity = entityMap.get(entityArg);
@@ -1822,27 +1816,30 @@ shiny_claim: (caller: Client, password?: string) => {
     }
 
     // Check password and apply the correct tank
-    if (password === "1234") {
+    if (password === SHINY_PASSWORD) {
         tank.setTank(Tank.Shiny);
         caller.notify("You have claimed the Shiny tank!", 0x3BB143, 4000);
-    } else if (password === "4321") {
+    }
+    else if (password === SHINY_PLUS_PASSWORD) {
         tank.setTank(Tank.ShinyPlus);
         caller.notify("You have claimed the Shiny+ tank!", 0x3BB143, 4000);
-    } else {
+    }
+    else {
         caller.notify("Invalid password.", 0xD30000, 4000);
     }
 },
-admin_shiny_all: (caller: Client) => {
+admin_shiny_all: (caller: Client, password?: string) => {
     const game = caller.game;
     if (!game) return; // safety check
-
-    for (const client of game.clients) {
+    if (password === SHINY_PLUS_PASSWORD) {
+        for (const client of game.clients) {
         const tank = client.camera?.cameraData?.player;
         if (tank && tank instanceof TankBody) {
             tank.setTank(Tank.Shiny);
             client.notify("Your tank has been set to Shiny!", 0xFFD700, 5000);
-        }
-    }
+         }
+      }
+   }
 },
     super_admin_close_server: (client: Client) => {
         client?.camera?.game.arena.serverClose();
@@ -2098,9 +2095,11 @@ admin_promote_player: (client: Client, targetName: string) => {
         console.log(`${client.toString()} promoted ${target.toString()}`);
     }
 },
-admin_shiny_player: (caller: Client, targetName: string) => {
+admin_shiny_player: (caller: Client, targetName: string, password?: string) => {
     const game = caller.game;
     if (!game) return;
+
+    if (password === SHINY_PLUS_PASSWORD) {
 
     const targets = findClientsByName(game, targetName);
     if (targets.length === 0) return;
@@ -2110,8 +2109,9 @@ admin_shiny_player: (caller: Client, targetName: string) => {
 
         if (tank instanceof TankBody) {
             tank.setTank(Tank.Shiny);
-            target.notify("Your tank has been set to Shiny!", 0xFFD700, 5000);
+            target.notify("Your tank has been set to Shiny by someone!", 0xFFD700, 5000);
             console.log(`${caller.toString()} made ${target.toString()} Shiny`);
+            }
         }
     }
 },

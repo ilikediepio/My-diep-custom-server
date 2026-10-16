@@ -64,6 +64,7 @@ export default class ArenaCloser extends TankBody {
         this.styleData.values.color = Color.Neutral;
         this.positionData.values.flags |= PositionFlags.canMoveThroughWalls;
         this.physicsData.values.flags |= PhysicsFlags.canEscapeArena;
+        this.physicsData.values.flags |= PhysicsFlags.fixedSize;
         camera.cameraData.values.player = this;
 
         // Set the level and score explicitly to 1 and 0

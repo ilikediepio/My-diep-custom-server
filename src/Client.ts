@@ -75,6 +75,7 @@ export class ClientInputs extends Inputs {
     public client: Client;
 
     public constructor(client: Client) {
+
         super();
         this.client = client;
     }
@@ -118,19 +119,6 @@ export default class Client {
     public write() {
         return new WSWriterStream(this);
     }
-
-//private canonicalIP(ip: string): string {
-//    ip = String(ip).trim().toLowerCase();
-//
-//    if (
-//        ip === "::1" ||
-//        ip === "0000:0000:0000:0000:0000:0000:0000:0001"
-//    ) {
-//        return "127.0.0.1";
-//    }
-//
-//    return ip;
-//}
 
     public constructor(ws: WebSocket<ClientWrapper>, game: GameServer) {
         this.game = game;
@@ -559,7 +547,7 @@ case ServerBound.TCPInit:
     public setHasCheated(value: boolean) {
         const player = this.camera?.cameraData.values.player;
         if (player && player.nameData) {
-            if (value) player.nameData.flags |= NameFlags.highlightedName;
+            if (value) player.nameData.flags |= NameFlags.highlightedName;   // custom names here  nametag name tag
             else player.nameData.flags &= ~NameFlags.highlightedName;
         }
 
@@ -649,6 +637,7 @@ case ServerBound.TCPInit:
     }
 
     public tick(tick: number) {
+
         // Handle client inputs.
         const movement: VectorAbstract = { x: 0, y: 0 };
 

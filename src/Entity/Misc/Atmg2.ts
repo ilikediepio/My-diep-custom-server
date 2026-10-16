@@ -63,6 +63,7 @@ export default class Atmg extends TankBody {
 
         this.nameData.values.name = "Atmg";
         this.styleData.values.color = Color.TeamRed;
+        this.physicsData.values.flags |= PhysicsFlags.fixedSize;
         camera.cameraData.values.player = this;
 
         // Set the level and score explicitly to 1 and 0

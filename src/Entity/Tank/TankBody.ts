@@ -36,6 +36,7 @@ import { Inputs } from "../AI";
 import AbstractBoss from "../Boss/AbstractBoss";
 import { ArenaState } from "../../Native/Arena";
 import { AccessLevel, maxPlayerLevel } from "../../config";
+import GhostWall from "../Misc/Visual/GhostWall";
 
 /**
  * Abstract type of entity which barrels can connect to.
@@ -132,6 +133,8 @@ export default class TankBody extends LivingEntity implements BarrelBase {
         this.barrels = [];
         this.addons = [];
 
+        GhostWall.deleteForTank(this); // remove ghost walls when tank changes
+
         // Get the new tank data
         const tank = getTankById(id);
         const camera = this.cameraEntity;
@@ -156,8 +159,13 @@ export default class TankBody extends LivingEntity implements BarrelBase {
         // Size ratios
         this.baseSize = tank.baseSizeOverride ?? tank.sides === 4 ? Math.SQRT2 * 32.5 : tank.sides === 16 ? Math.SQRT2 * 25 : 50;
         this.physicsData.absorbtionFactor = this.isInvulnerable ? 0 : tank.absorbtionFactor;
-        if (tank.absorbtionFactor === 0) this.positionData.flags |= PositionFlags.canMoveThroughWalls;
-        else if (this.positionData.flags & PositionFlags.canMoveThroughWalls) this.positionData.flags ^= PositionFlags.canMoveThroughWalls;
+// ALWAYS reset first (critical)
+this.positionData.values.flags &= ~PositionFlags.canMoveThroughWalls;
+
+// THEN set deterministically
+if (tank.absorbtionFactor === 0) {
+    this.positionData.values.flags |= PositionFlags.canMoveThroughWalls;
+}
 
         camera.cameraData.tank = this._currentTank = id;
         if (tank.upgradeMessage && camera instanceof ClientCamera) camera.client.notify(tank.upgradeMessage);
@@ -268,8 +276,14 @@ export default class TankBody extends LivingEntity implements BarrelBase {
             //    if (this.cameraEntity instanceof ClientCamera && this.cameraEntity.client.accessLevel < AccessLevel.FullAccess) this.setInvulnerability(false);
             //}
         }
-        if (!this.deletionAnimation && !this.inputs.deleted) this.physicsData.size = this.baseSize * this.cameraEntity.sizeFactor;
-        else this.regenPerTick = 0;
+        if (!this.deletionAnimation && !this.inputs.deleted) {
+            if (!(this.physicsData.values.flags & PhysicsFlags.fixedSize)) {
+                this.physicsData.size = this.baseSize * this.cameraEntity.sizeFactor;
+            }
+        }
+        else {
+            this.regenPerTick = 0;
+        }
 
         super.tick(tick);
 
