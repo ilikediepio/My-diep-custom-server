@@ -70,6 +70,7 @@ export default class TankBody extends LivingEntity implements BarrelBase {
 
     /** Size of the tank at level 1. Defined by tank loader.  */
     public baseSize = 50;
+    private fixedSizeCache: number | null = null;
     /** The definition of the currentTank */
     public definition: TankDefinition = getTankById(Tank.Basic) as TankDefinition;
     /** Reload time base, used for barrel's reloads. */
@@ -277,7 +278,17 @@ if (tank.absorbtionFactor === 0) {
             //}
         }
         if (!this.deletionAnimation && !this.inputs.deleted) {
-            if (!(this.physicsData.values.flags & PhysicsFlags.fixedSize)) {
+            if (this.physicsData.values.flags & PhysicsFlags.fixedSize) {
+                // Calculate the normal size once, then preserve it.
+                if (this.fixedSizeCache === null) {
+                    this.physicsData.size = this.baseSize * this.cameraEntity.sizeFactor;
+                    this.fixedSizeCache = this.physicsData.values.size;
+                }
+                else {
+                    this.physicsData.size = this.fixedSizeCache;
+                }
+            }
+            else {
                 this.physicsData.size = this.baseSize * this.cameraEntity.sizeFactor;
             }
         }
