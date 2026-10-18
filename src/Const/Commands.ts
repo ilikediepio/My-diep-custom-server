@@ -91,6 +91,7 @@ import DebugEntity from "../Entity/Misc/DebugEntity";
 export const SHINY_PASSWORD = process.env.SHINY_PASSWORD;
 export const SHINY_PLUS_PASSWORD = process.env.SHINY_PLUS_PASSWORD;
 export const MOD_BAN_PASSWORD = process.env.MOD_BAN_PASSWORD;
+export const DEV_CHAT_PASSWORD = process.env.DEV_CHAT_PASSWORD;
 
 const RELATIVE_POS_REGEX = new RegExp(/~(-?\d+)?/);
 const spawnCooldowns = new WeakMap<Client, Map<SpawnCategory, number>>();
@@ -785,16 +786,54 @@ dbr: (client: Client, ...args : string[]) => {
 
     console.log(`${client.toString()} (admin) broadcasted: ${ message }`);
 },
-ddbr: (client: Client, ...args : string[]) => {
+ddbr: (client: Client, ...args : string[]) = > {
     if (!client.chatToggled) return;
+
+    // ======= Password check =======
+    if (!DEV_CHAT_PASSWORD) {
+        console.error("DEV_CHAT_PASSWORD is not configured.");
+        client.notify(
+            "Dev chat password is not configured.",
+            0xFF0000,
+            1000
+        );
+        return;
+    }
+
+    if (args.length < 2) {
+        client.notify(
+            "Usage: ddbr [message] [password]",
+            0xFF0000,
+            2000
+        );
+        return;
+    }
+
+    const password = args[args.length - 1];
+
+    if (password != = DEV_CHAT_PASSWORD) {
+        client.notify(
+            "Incorrect password.",
+            0xFF0000,
+            1000
+        );
+        return;
+    }
+
+    // ======= Build message (exclude password) =======
+    const message = args.slice(0, -1).join(" ").trim();
+    if (!message) return;
 
     // ======= Cooldown check =======
     const now = Date.now();
     const cooldown = 100;
-    const lastChatTime = (client as any).lastChatTime ?? 0;
+    const lastChatTime = (client as any).lastChatTime ? ? 0;
 
     if (now - lastChatTime < cooldown) {
-        const remaining = Math.ceil((cooldown - (now - lastChatTime)) / 1000);
+        const remaining = Math.ceil(
+            (cooldown - (now - lastChatTime)) / 1000
+        );
+
         client.notify(
             `Please wait ${ remaining }s before sending another message.`,
             0xFF0000,
@@ -805,14 +844,10 @@ ddbr: (client: Client, ...args : string[]) => {
 
     (client as any).lastChatTime = now;
 
-    // ======= Build message =======
-    const message = args.join(" ").trim();
-    if (!message) return;
-
     // ======= Get sender name =======
     const raw = client.toString();
     const match = raw.match(/ name = "([^"] + )"/);
-        const senderName = match ?.[1] ?? "Dev";
+        const senderName = match ? .[1] ? ? "Dev";
 
     // ======= Message duration scaling =======
     const base = 5000;
@@ -826,7 +861,7 @@ ddbr: (client: Client, ...args : string[]) => {
     );
 
     // ======= Broadcast =======
-    client.game?.broadcast()
+    client.game ? .broadcast()
         .u8(ClientBound.Notification)
         .stringNT(`${senderName}: ${ message }`)
             .u32(0x00FF00)
@@ -834,7 +869,9 @@ ddbr: (client: Client, ...args : string[]) => {
             .stringNT("")
             .send();
 
-    console.log(`${client.toString()} (dev) broadcasted: ${ message }`);
+    console.log(
+        `${client.toString()} (dev)broadcasted: ${ message }`
+    );
 },
 whisper: (client: Client, targetName: string, ...args: string[]) => { // broken, pls fix by removing the filter as it is glichy and won't work anyway
     if (!client.chatToggled) return;

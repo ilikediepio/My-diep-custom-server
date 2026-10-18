@@ -1,3 +1,5 @@
 make the easy obby have different challenges on each side, the dodge bullets on one and another challenge on the other side
 
 add clarification about easy and hard obby so people who don't look at the upgrade text know where to go
+
+add a mini menu that normal default access players can access via a password to gain random not so OP but strong anyway tanks
