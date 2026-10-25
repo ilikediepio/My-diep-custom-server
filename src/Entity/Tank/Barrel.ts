@@ -81,6 +81,9 @@ import CrocSkimmer from "./Projectile/CrocSkimmer";
 import { BarrelAddon, BarrelAddonById } from "./BarrelAddons";
 import { Swarm } from "./Projectile/Swarm";
 import NecromancerSquare from "./Projectile/NecromancerSquare";
+import NecromancerTriangle from "./Projectile/NecromancerTriangle";
+import NecromancerPentagon from "./Projectile/NecromancerPentagon";
+import NecromancerHexagon from "./Projectile/NecromancerHexagon";
 import GhostWall from "../Misc/Visual/GhostWall";
 
 import DamageZone1 from "../Misc/DZ/DamageZone1";
@@ -305,6 +308,14 @@ export default class Barrel extends ObjectEntity {
         this.barrelData.values.trapezoidDirection = barrelDefinition.trapezoidDirection;
         this.shootCycle = new ShootCycle(this);
 
+        // Debug: identify barrel definitions missing bullet data
+        if (!barrelDefinition.bullet) {
+            console.error(
+                "[Barrel Debug] Missing bullet data:",
+                JSON.stringify(barrelDefinition, null, 2)
+            );
+        }
+
         this.bulletAccel = (20 + (owner.cameraEntity.cameraData?.values.statLevels.values[Stat.BulletSpeed] || 0) * 3) * barrelDefinition.bullet.speed;
     }
 
@@ -346,9 +357,10 @@ case 'bullet': {
         bullet.positionData.flags |= PositionFlags.canMoveThroughWalls;
     }
 
-    // Disable wall phasing for ATMG and ObbyObstacle1
+    // Disable wall phasing for ATMGs and ObbyObstacle1
     if (
         tankDefinition?.id === Tank.Atmg ||
+        tankDefinition?.id === Tank.ArrasAtmg ||
         tankDefinition?.id === Tank.ObbyObsticle1
     ) {
         bullet.positionData.flags &= ~PositionFlags.canMoveThroughWalls;
@@ -373,6 +385,18 @@ case 'bullet': {
                 break;
             case 'necrodrone':
                 new NecromancerSquare(this, this.tank, tankDefinition, angle);
+                break;
+            case 'necrosquare':
+                new NecromancerSquare(this, this.tank, tankDefinition, angle);
+                break;
+            case 'necrotriangle':
+                new NecromancerTriangle(this, this.tank, tankDefinition, angle);
+                break;
+            case 'necropentagon':
+                new NecromancerPentagon(this, this.tank, tankDefinition, angle);
+                break;
+            case 'necrohexagon':
+                new NecromancerHexagon(this, this.tank, tankDefinition, angle);
                 break;
             case 'swarm':
                 new Swarm(this, this.tank, tankDefinition, angle);

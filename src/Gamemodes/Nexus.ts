@@ -22,8 +22,8 @@ import Client from "../Client";
 
 import TeamBase from "../Entity/Misc/TeamBase";
 import TankBody from "../Entity/Tank/TankBody";
-import BaseGuardian from "../Entity/Misc/BaseGuardian";
-import ATMG from "../Entity/Misc/Atmg2";
+import NexusGuardian from "../Entity/Misc/NexusGuardian";
+import ATMG from "../Entity/Misc/Atmg";
 import Wall from "../Entity/Misc/MazeWall";
 import DamageZone1 from "../Entity/Misc/DZ/DamageZone1";
 import DamageZone2 from "../Entity/Misc/DZ/DamageZone2";
@@ -38,10 +38,11 @@ import DamageZone10 from "../Entity/Misc/DZ/DamageZone10";
 
 import { TeamEntity } from "../Entity/Misc/TeamEntity";
 import { Color, ArenaFlags, Tank } from "../Const/Enums";
-
 import ShapeManager from "../Entity/Shape/Manager";
 
-const arenaSize = 8000; // 8000
+import ArrasATMG from "../Entity/Misc/ArrasAtmg"; // temporery
+
+const arenaSize = 5000; // originaly 8000
 const baseSize = 2000;
 
 class ZeroShapeManager extends ShapeManager {
@@ -61,9 +62,10 @@ export default class NexusArena extends ArenaEntity {
     protected shapes: ShapeManager = new ZeroShapeManager(this);
     /** Blue Team Base */
     public blueTeamBase: TeamBase;
-    /** BaseGuardian and ATMG entities */
-    public BaseGuardian!: BaseGuardian;
-    public atmg!: ATMG;
+    /** NexusGuardian and ATMG entities */
+    public NexusGuardian!: NexusGuardian;
+    //public atmg!: ATMG;
+    public arrasatmg!: ArrasATMG;
     // Wall Entity and damage zones
     public Wall: Wall;
 
@@ -80,312 +82,161 @@ export default class NexusArena extends ArenaEntity {
         this.blueTeamBase = new TeamBase(
             game,
             new TeamEntity(this.game, Color.TeamBlue),
-            0, 0, // Center of the map
+            -600, -200, // Center of the map
             baseSize,
             baseSize
         );
 
         // Spawn Base Guardian at center
-        const guardian = new BaseGuardian(this.game);
+        const guardian = new NexusGuardian(this.game);
         guardian.relationsData.values.team = this.blueTeamBase.relationsData.values.team;
-        guardian.positionData.values.x = 0;
-        guardian.positionData.values.y = 0;
-        this.BaseGuardian = guardian;
-        // Spawn ATMG near exit
-        const atmg = new ATMG(this.game);
-        atmg.relationsData.values.team = null;
-        atmg.positionData.values.x = -3000;
-        atmg.positionData.values.y = -5800;
-        this.atmg = atmg;
+        guardian.positionData.values.x = -600;
+        guardian.positionData.values.y = -200;
+        this.NexusGuardian = guardian;
+        // Spawn ATMG near exit (old version, disabled)
+        //const atmg = new ATMG(this.game);
+        //atmg.relationsData.values.team = null;
+        //atmg.positionData.values.x = -3400;
+        //atmg.positionData.values.y = -3000;
+        //this.atmg = atmg;
 
-//        delete 3 walls closest to these locations: [15:40:09] deleted an object near -2975 3375
-//[15:40:24] deleted an object near -175 -5025
-//[15:40:28] deleted an object near -575 -4975
+        const arrasatmg = new ArrasATMG(this.game);
+        arrasatmg.relationsData.values.team = null;
+        arrasatmg.positionData.values.x = -3400;
+        arrasatmg.positionData.values.y = -3000;
+        this.arrasatmg = arrasatmg;
 
-    // Spawns all walls
-    // --- Outer / large structure ---
-// Inner walls / connectors only
-this.Wall = new Wall(game, -3800, -4600, 400, 400);
-this.Wall = new Wall(game, -3800, -4200, 400, 400);
-this.Wall = new Wall(game, -3800, -3800, 400, 400);
-this.Wall = new Wall(game, -3800, -3400, 400, 400);
 
-this.Wall = new Wall(game, -3400, -3400, 400, 400);
-this.Wall = new Wall(game, -3000, -3400, 400, 400);
-this.Wall = new Wall(game, -2600, -3400, 400, 400);
-this.Wall = new Wall(game, -2200, -3400, 400, 400);
-this.Wall = new Wall(game, -1800, -3400, 400, 400);
-this.Wall = new Wall(game, -1400, -3400, 400, 400);
-this.Wall = new Wall(game, -1000, -3400, 400, 400);
-this.Wall = new Wall(game, -600, -3400, 400, 400);
-this.Wall = new Wall(game, -200, -3400, 400, 400);
-this.Wall = new Wall(game, 200, -3400, 400, 400);
-this.Wall = new Wall(game, 1400, -3400, 400, 400);
-this.Wall = new Wall(game, 1800, -3400, 400, 400);
-this.Wall = new Wall(game, 2200, -3400, 400, 400);
-this.Wall = new Wall(game, 2600, -3400, 400, 400);
 
-this.Wall = new Wall(game, 2200, -3800, 400, 400);
-this.Wall = new Wall(game, 2200, -4200, 400, 400);
-this.Wall = new Wall(game, 2200, -4600, 400, 400);
+        // Upper central protrusion
+        this.Wall = new Wall(game, 600, -3000, 400, 400);
+        this.Wall = new Wall(game, 600, -2600, 400, 400);
 
-this.Wall = new Wall(game, -3400, 3400, 400, 400);
-this.Wall = new Wall(game, -2600, 3000, 400, 400);
-this.Wall = new Wall(game, -2200, 3000, 400, 400);
-this.Wall = new Wall(game, -1800, 3000, 400, 400);
-this.Wall = new Wall(game, -1400, 3000, 400, 400);
-this.Wall = new Wall(game, -1000, 3000, 400, 400);
-this.Wall = new Wall(game, -600, 3000, 400, 400);
-this.Wall = new Wall(game, 600, 3000, 400, 400);
-this.Wall = new Wall(game, 1000, 3000, 400, 400);
-this.Wall = new Wall(game, 1400, 3000, 400, 400);
-this.Wall = new Wall(game, 1800, 3000, 400, 400);
-this.Wall = new Wall(game, 2200, 3000, 400, 400);
-this.Wall = new Wall(game, 2600, 3000, 400, 400);
-this.Wall = new Wall(game, 3000, 3000, 400, 400);
-this.Wall = new Wall(game, 3400, 3000, 400, 400);
-this.Wall = new Wall(game, 3800, 3000, 400, 400);
-this.Wall = new Wall(game, 4200, 3000, 400, 400);
-this.Wall = new Wall(game, 4600, 3000, 400, 400);
-this.Wall = new Wall(game, 5000, 3000, 400, 400);
-this.Wall = new Wall(game, 5400, 3000, 400, 400);
+        // Top horizontal wall — left section
+        this.Wall = new Wall(game, -3800, -2200, 400, 400);
+        this.Wall = new Wall(game, -3400, -2200, 400, 400);
+        this.Wall = new Wall(game, -3000, -2200, 400, 400);
+        this.Wall = new Wall(game, -2600, -2200, 400, 400);
+        this.Wall = new Wall(game, -2200, -2200, 400, 400);
+        this.Wall = new Wall(game, -1800, -2200, 400, 400);
+        this.Wall = new Wall(game, -1400, -2200, 400, 400);
+        this.Wall = new Wall(game, -1000, -2200, 400, 400);
+        this.Wall = new Wall(game, -600, -2200, 400, 400);
 
-this.Wall = new Wall(game, 3400, 3400, 400, 400);
-this.Wall = new Wall(game, 3400, 3800, 400, 400);
-this.Wall = new Wall(game, 3400, 4200, 400, 400);
-this.Wall = new Wall(game, 3400, 4600, 400, 400);
-this.Wall = new Wall(game, 3400, 5800, 400, 400);
-this.Wall = new Wall(game, 3400, 6200, 400, 400);
+        // Top horizontal wall — right section
+        this.Wall = new Wall(game, 200, -2200, 400, 400);
+        this.Wall = new Wall(game, 600, -2200, 400, 400);
+        this.Wall = new Wall(game, 1000, -2200, 400, 400);
+        this.Wall = new Wall(game, 1400, -2200, 400, 400);
+        this.Wall = new Wall(game, 1800, -2200, 400, 400);
+        this.Wall = new Wall(game, 2200, -2200, 400, 400);
+        this.Wall = new Wall(game, 2600, -2200, 400, 400);
 
-// Example smaller horizontal connectors
-this.Wall = new Wall(game, -1400, -1400, 400, 400);
-this.Wall = new Wall(game, -1000, -1400, 400, 400);
-this.Wall = new Wall(game, -600, -1400, 400, 400);
-this.Wall = new Wall(game, 600, -1400, 400, 400);
-this.Wall = new Wall(game, 1000, -1400, 400, 400);
-this.Wall = new Wall(game, 1400, -1400, 400, 400);
+        // Upper vertical walls
+        this.Wall = new Wall(game, -3800, -1800, 400, 400);
+        this.Wall = new Wall(game, -1800, -1800, 400, 400);
+        this.Wall = new Wall(game, 600, -1800, 400, 400);
+        this.Wall = new Wall(game, 2600, -1800, 400, 400);
 
-this.Wall = new Wall(game, -1400, -1000, 400, 400);
-this.Wall = new Wall(game, -1400, -600, 400, 400);
-this.Wall = new Wall(game, -1400, -200, 400, 400);
-this.Wall = new Wall(game, -1400, 200, 400, 400);
-this.Wall = new Wall(game, -1400, 600, 400, 400);
-this.Wall = new Wall(game, -1400, 1000, 400, 400);
-this.Wall = new Wall(game, -1400, 1400, 400, 400);
+        // Upper horizontal branches
+        this.Wall = new Wall(game, -3800, -1400, 400, 400);
+        this.Wall = new Wall(game, -1800, -1400, 400, 400);
+        this.Wall = new Wall(game, -1400, -1400, 400, 400);
+        this.Wall = new Wall(game, -1000, -1400, 400, 400);
+        this.Wall = new Wall(game, -200, -1400, 400, 400);
+        this.Wall = new Wall(game, 200, -1400, 400, 400);
+        this.Wall = new Wall(game, 600, -1400, 400, 400);
+        this.Wall = new Wall(game, 2600, -1400, 400, 400);
 
-this.Wall = new Wall(game, 1400, -1000, 400, 400);
-this.Wall = new Wall(game, 1400, -600, 400, 400);
-this.Wall = new Wall(game, 1400, -200, 400, 400);
-this.Wall = new Wall(game, 1400, 200, 400, 400);
-this.Wall = new Wall(game, 1400, 600, 400, 400);
-this.Wall = new Wall(game, 1400, 1000, 400, 400);
-this.Wall = new Wall(game, 1400, 1400, 400, 400);
+        // Upper-middle vertical walls
+        this.Wall = new Wall(game, -3800, -1000, 400, 400);
+        this.Wall = new Wall(game, -1800, -1000, 400, 400);
+        this.Wall = new Wall(game, 600, -1000, 400, 400);
+        this.Wall = new Wall(game, 2600, -1000, 400, 400);
 
-this.Wall = new Wall(game, -600, 1800, 400, 400);
-this.Wall = new Wall(game, -600, 2200, 400, 400);
-this.Wall = new Wall(game, -600, 2600, 400, 400);
-this.Wall = new Wall(game, -600, 3000, 400, 400);
-this.Wall = new Wall(game, 600, 1800, 400, 400);
-this.Wall = new Wall(game, 600, 2200, 400, 400);
-this.Wall = new Wall(game, 600, 2600, 400, 400);
-this.Wall = new Wall(game, 600, 3000, 400, 400);
+        this.Wall = new Wall(game, -3800, -600, 400, 400);
+        this.Wall = new Wall(game, -1800, -600, 400, 400);
+        this.Wall = new Wall(game, 600, -600, 400, 400);
+        this.Wall = new Wall(game, 2600, -600, 400, 400);
 
-// Inner walls / connectors only
-this.Wall = new Wall(game, -3800, -5000, 400, 400);
-this.Wall = new Wall(game, -3400, -5000, 400, 400);
-this.Wall = new Wall(game, -3000, -5000, 400, 400);
-this.Wall = new Wall(game, -2600, -5000, 400, 400);
-this.Wall = new Wall(game, -2200, -5000, 400, 400);
-this.Wall = new Wall(game, -1800, -5000, 400, 400);
-this.Wall = new Wall(game, -1400, -5000, 400, 400);
-this.Wall = new Wall(game, -1000, -5000, 400, 400);
-this.Wall = new Wall(game, 200, -5000, 400, 400);
-this.Wall = new Wall(game, 600, -5000, 400, 400);
-this.Wall = new Wall(game, 1000, -5000, 400, 400);
-this.Wall = new Wall(game, 1400, -5000, 400, 400);
-this.Wall = new Wall(game, 1800, -5000, 400, 400);
-this.Wall = new Wall(game, 2200, -5000, 400, 400);
+        // Central side walls
+        this.Wall = new Wall(game, -3800, -200, 400, 400);
+        this.Wall = new Wall(game, 2600, -200, 400, 400);
 
-// Horizontal cluster top left
-this.Wall = new Wall(game, -3400, -3400, 400, 400);
-this.Wall = new Wall(game, -3000, -3400, 400, 400);
-this.Wall = new Wall(game, -2600, -3400, 400, 400);
-this.Wall = new Wall(game, -2200, -3400, 400, 400);
-this.Wall = new Wall(game, -1800, -3400, 400, 400);
-this.Wall = new Wall(game, -1400, -3400, 400, 400);
-this.Wall = new Wall(game, -1000, -3400, 400, 400);
-this.Wall = new Wall(game, -600, -3400, 400, 400);
-this.Wall = new Wall(game, -200, -3400, 400, 400);
-this.Wall = new Wall(game, 200, -3400, 400, 400);
-this.Wall = new Wall(game, 1400, -3400, 400, 400);
-this.Wall = new Wall(game, 1800, -3400, 400, 400);
-this.Wall = new Wall(game, 2200, -3400, 400, 400);
-this.Wall = new Wall(game, 2600, -3400, 400, 400);
-this.Wall = new Wall(game, 3000, -3400, 400, 400);
-this.Wall = new Wall(game, 3400, -3400, 400, 400);
-this.Wall = new Wall(game, 3800, -3400, 400, 400);
-this.Wall = new Wall(game, 4200, -3400, 400, 400);
-this.Wall = new Wall(game, 4600, -3400, 400, 400);
-this.Wall = new Wall(game, 5000, -3400, 400, 400);
-this.Wall = new Wall(game, 5400, -3400, 400, 400);
-this.Wall = new Wall(game, 5800, -3400, 400, 400);
-this.Wall = new Wall(game, 6200, -3400, 400, 400);
-this.Wall = new Wall(game, 6600, -3400, 400, 400);
+        this.Wall = new Wall(game, -3800, 200, 400, 400);
+        this.Wall = new Wall(game, -1800, 200, 400, 400);
+        this.Wall = new Wall(game, 600, 200, 400, 400);
+        this.Wall = new Wall(game, 2600, 200, 400, 400);
 
-// Vertical right cluster
-this.Wall = new Wall(game, 6600, -3000, 400, 400);
-this.Wall = new Wall(game, 6600, -2600, 400, 400);
-this.Wall = new Wall(game, 6600, -2200, 400, 400);
+        this.Wall = new Wall(game, -3800, 600, 400, 400);
+        this.Wall = new Wall(game, -1800, 600, 400, 400);
+        this.Wall = new Wall(game, 600, 600, 400, 400);
+        this.Wall = new Wall(game, 2600, 600, 400, 400);
 
-// Horizontal cluster bottom left
-this.Wall = new Wall(game, -3400, 3000, 400, 400);
-this.Wall = new Wall(game, -3000, 3000, 400, 400);
-this.Wall = new Wall(game, -2600, 3000, 400, 400);
-this.Wall = new Wall(game, -2200, 3000, 400, 400);
-this.Wall = new Wall(game, -1800, 3000, 400, 400);
-this.Wall = new Wall(game, -1400, 3000, 400, 400);
-this.Wall = new Wall(game, -1000, 3000, 400, 400);
-this.Wall = new Wall(game, -600, 3000, 400, 400);
-this.Wall = new Wall(game, 600, 3000, 400, 400);
-this.Wall = new Wall(game, 1000, 3000, 400, 400);
-this.Wall = new Wall(game, 1400, 3000, 400, 400);
-this.Wall = new Wall(game, 1800, 3000, 400, 400);
-this.Wall = new Wall(game, 2200, 3000, 400, 400);
-this.Wall = new Wall(game, 2600, 3000, 400, 400);
-this.Wall = new Wall(game, 3000, 3000, 400, 400);
-this.Wall = new Wall(game, 3400, 3000, 400, 400);
-this.Wall = new Wall(game, 3800, 3000, 400, 400);
-this.Wall = new Wall(game, 4200, 3000, 400, 400);
-this.Wall = new Wall(game, 4600, 3000, 400, 400);
-this.Wall = new Wall(game, 5000, 3000, 400, 400);
-this.Wall = new Wall(game, 5400, 3000, 400, 400);
+        // Middle horizontal wall — left section
+        this.Wall = new Wall(game, -3800, 1000, 400, 400);
+        this.Wall = new Wall(game, -3400, 1000, 400, 400);
+        this.Wall = new Wall(game, -3000, 1000, 400, 400);
+        this.Wall = new Wall(game, -2600, 1000, 400, 400);
+        this.Wall = new Wall(game, -2200, 1000, 400, 400);
+        this.Wall = new Wall(game, -1800, 1000, 400, 400);
+        this.Wall = new Wall(game, -1400, 1000, 400, 400);
+        this.Wall = new Wall(game, -1000, 1000, 400, 400);
 
-// Vertical cluster mid-right
-this.Wall = new Wall(game, -3400, 3800, 400, 400);
-this.Wall = new Wall(game, -3400, 4200, 400, 400);
-this.Wall = new Wall(game, -3400, 4600, 400, 400);
-this.Wall = new Wall(game, -3400, 5000, 400, 400);
-this.Wall = new Wall(game, -3400, 5400, 400, 400);
-this.Wall = new Wall(game, 3400, 3400, 400, 400);
-this.Wall = new Wall(game, 3400, 3800, 400, 400);
-this.Wall = new Wall(game, 3400, 4200, 400, 400);
-this.Wall = new Wall(game, 3400, 4600, 400, 400);
-this.Wall = new Wall(game, 3400, 5800, 400, 400);
-this.Wall = new Wall(game, 3400, 6200, 400, 400);
+        // Middle horizontal wall — right section
+        this.Wall = new Wall(game, -200, 1000, 400, 400);
+        this.Wall = new Wall(game, 200, 1000, 400, 400);
+        this.Wall = new Wall(game, 600, 1000, 400, 400);
+        this.Wall = new Wall(game, 1000, 1000, 400, 400);
+        this.Wall = new Wall(game, 1400, 1000, 400, 400);
+        this.Wall = new Wall(game, 1800, 1000, 400, 400);
+        this.Wall = new Wall(game, 2200, 1000, 400, 400);
+        this.Wall = new Wall(game, 2600, 1000, 400, 400);
 
-// Left horizontal connectors near center
-this.Wall = new Wall(game, -600, 1400, 400, 400);
-this.Wall = new Wall(game, -1000, 1400, 400, 400);
-this.Wall = new Wall(game, -600, 1800, 400, 400);
-this.Wall = new Wall(game, -600, 2200, 400, 400);
-this.Wall = new Wall(game, -600, 2600, 400, 400);
+        // Lower horizontal extension to the right
+        this.Wall = new Wall(game, 3000, 1400, 400, 400);
+        this.Wall = new Wall(game, 3400, 1400, 400, 400);
 
-// Right horizontal connectors near center
-this.Wall = new Wall(game, 600, 1400, 400, 400);
-this.Wall = new Wall(game, 1000, 1400, 400, 400);
-this.Wall = new Wall(game, 600, 1800, 400, 400);
-this.Wall = new Wall(game, 600, 2200, 400, 400);
-this.Wall = new Wall(game, 600, 2600, 400, 400);
+        // Lower vertical walls
+        this.Wall = new Wall(game, -3800, 1400, 400, 400);
+        this.Wall = new Wall(game, -2200, 1400, 400, 400);
+        this.Wall = new Wall(game, 1000, 1400, 400, 400);
+        this.Wall = new Wall(game, 2600, 1400, 400, 400);
 
-this.Wall = new Wall(game, 600, 1400, 400, 400);
-this.Wall = new Wall(game, -600, 1400, 400, 400);
-this.Wall = new Wall(game, -1000, 1400, 400, 400);
+        this.Wall = new Wall(game, -3800, 1800, 400, 400);
+        this.Wall = new Wall(game, -2200, 1800, 400, 400);
+        this.Wall = new Wall(game, 1000, 1800, 400, 400);
+        this.Wall = new Wall(game, 2600, 1800, 400, 400);
 
-this.Wall = new Wall(game, 3000, -3400, 400, 400);
-this.Wall = new Wall(game, 3400, -3400, 400, 400);
-this.Wall = new Wall(game, 3800, -3400, 400, 400);
-this.Wall = new Wall(game, 4200, -3400, 400, 400);
-this.Wall = new Wall(game, 4600, -3400, 400, 400);
-this.Wall = new Wall(game, 5000, -3400, 400, 400);
-this.Wall = new Wall(game, 5400, -3400, 400, 400);
-this.Wall = new Wall(game, 5800, -3400, 400, 400);
-this.Wall = new Wall(game, 6200, -3400, 400, 400);
-this.Wall = new Wall(game, 6600, -3400, 400, 400);
-this.Wall = new Wall(game, 6600, -3000, 400, 400);
-this.Wall = new Wall(game, 6600, -2600, 400, 400);
-this.Wall = new Wall(game, 6600, -2200, 400, 400);
+        this.Wall = new Wall(game, -3800, 2200, 400, 400);
+        this.Wall = new Wall(game, -2200, 2200, 400, 400);
+        this.Wall = new Wall(game, 1000, 2200, 400, 400);
+        this.Wall = new Wall(game, 2600, 2200, 400, 400);
 
-this.Wall = new Wall(game, -3800, -5000, 400, 400);
-this.Wall = new Wall(game, -3400, -5000, 400, 400);
-this.Wall = new Wall(game, -3000, -5000, 400, 400);
-this.Wall = new Wall(game, -2600, -5000, 400, 400);
-this.Wall = new Wall(game, -2200, -5000, 400, 400);
-this.Wall = new Wall(game, -1800, -5000, 400, 400);
-this.Wall = new Wall(game, -1400, -5000, 400, 400);
-this.Wall = new Wall(game, -1000, -5000, 400, 400);
-this.Wall = new Wall(game, 200, -5000, 400, 400);
-this.Wall = new Wall(game, 600, -5000, 400, 400);
-this.Wall = new Wall(game, 1000, -5000, 400, 400);
-this.Wall = new Wall(game, 1400, -5000, 400, 400);
-this.Wall = new Wall(game, 1800, -5000, 400, 400);
-this.Wall = new Wall(game, 2200, -5000, 400, 400);
+        this.Wall = new Wall(game, -3800, 2600, 400, 400);
+        this.Wall = new Wall(game, -2200, 2600, 400, 400);
+        this.Wall = new Wall(game, 1000, 2600, 400, 400);
+        this.Wall = new Wall(game, 2600, 2600, 400, 400);
 
-this.Wall = new Wall(game, -6600, -3400, 400, 400);
-this.Wall = new Wall(game, -6200, -3400, 400, 400);
-this.Wall = new Wall(game, -5800, -3400, 400, 400);
-this.Wall = new Wall(game, -5400, -3400, 400, 400);
-this.Wall = new Wall(game, -5000, -3400, 400, 400);
-this.Wall = new Wall(game, -4600, -3400, 400, 400);
-this.Wall = new Wall(game, -4200, -3400, 400, 400);
+        // Bottom horizontal wall
+        this.Wall = new Wall(game, -3800, 3000, 400, 400);
+        this.Wall = new Wall(game, -3400, 3000, 400, 400);
+        this.Wall = new Wall(game, -3000, 3000, 400, 400);
+        this.Wall = new Wall(game, -2600, 3000, 400, 400);
+        this.Wall = new Wall(game, -2200, 3000, 400, 400);
+        this.Wall = new Wall(game, -1800, 3000, 400, 400);
+        this.Wall = new Wall(game, -1400, 3000, 400, 400);
+        this.Wall = new Wall(game, -1000, 3000, 400, 400);
+        this.Wall = new Wall(game, -600, 3000, 400, 400);
+        this.Wall = new Wall(game, -200, 3000, 400, 400);
+        this.Wall = new Wall(game, 200, 3000, 400, 400);
+        this.Wall = new Wall(game, 600, 3000, 400, 400);
+        this.Wall = new Wall(game, 1000, 3000, 400, 400);
+        this.Wall = new Wall(game, 1400, 3000, 400, 400);
+        this.Wall = new Wall(game, 1800, 3000, 400, 400);
+        this.Wall = new Wall(game, 2200, 3000, 400, 400);
+        this.Wall = new Wall(game, 2600, 3000, 400, 400);
 
-this.Wall = new Wall(game, -3400, 3000, 400, 400);
-this.Wall = new Wall(game, -3000, 3000, 400, 400);
-
-this.Wall = new Wall(game, -3400, 3800, 400, 400);
-this.Wall = new Wall(game, -3400, 4200, 400, 400);
-
-this.Wall = new Wall(game, 1400, -3000, 400, 400);
-this.Wall = new Wall(game, 1400, -2600, 400, 400);
-this.Wall = new Wall(game, 1400, -2200, 400, 400);
-this.Wall = new Wall(game, 1400, -1800, 400, 400);
-
-this.Wall = new Wall(game, -6200, -1400, 400, 400);
-this.Wall = new Wall(game, -5800, -1400, 400, 400);
-this.Wall = new Wall(game, -5400, -1400, 400, 400);
-this.Wall = new Wall(game, -5000, -1400, 400, 400);
-this.Wall = new Wall(game, -4600, -1400, 400, 400);
-this.Wall = new Wall(game, -4200, -1400, 400, 400);
-this.Wall = new Wall(game, -3800, -1400, 400, 400);
-this.Wall = new Wall(game, -3400, -1400, 400, 400);
-this.Wall = new Wall(game, -3000, -1400, 400, 400);
-this.Wall = new Wall(game, -2600, -1400, 400, 400);
-this.Wall = new Wall(game, -2200, -1400, 400, 400);
-this.Wall = new Wall(game, -1800, -1400, 400, 400);
-
-this.Wall = new Wall(game, -3400, 4600, 400, 400);
-this.Wall = new Wall(game, -3400, 5000, 400, 400);
-this.Wall = new Wall(game, -3400, 5400, 400, 400);
-
-// --- Giant perimeter (condensed but complete) ---
-for (let y = -3000; y <= 6600; y += 400)
-    this.Wall = new Wall(game, -6600, y, 400, 400);
-
-for (let x = -6200; x <= 6600; x += 400)
-    this.Wall = new Wall(game, x, 6600, 400, 400);
-
-for (let y = 6200; y >= -1800; y -= 400)
-    this.Wall = new Wall(game, 6600, y, 400, 400);
-
-    // damage zones
-this.Wall = new DamageZone6(game, null, 5700, 2900, 200, 200, true);
-this.Wall = new DamageZone6(game, null, 5900, 2900, 200, 200, true);
-this.Wall = new DamageZone6(game, null, 6100, 2900, 200, 200, true);
-this.Wall = new DamageZone6(game, null, 6300, 2900, 200, 200, true);
-
-this.Wall = new DamageZone6(game, null, 5700, 3100, 200, 200, true);
-this.Wall = new DamageZone6(game, null, 5900, 3100, 200, 200, true);
-this.Wall = new DamageZone6(game, null, 6100, 3100, 200, 200, true);
-this.Wall = new DamageZone6(game, null, 6300, 3100, 200, 200, true);
-
-this.Wall = new DamageZone1(game, null, 3300, 4900, 200, 200, true);
-this.Wall = new DamageZone1(game, null, 3500, 4900, 200, 200, true);
-this.Wall = new DamageZone1(game, null, 3300, 5500, 200, 200, true);
-this.Wall = new DamageZone1(game, null, 3500, 5500, 200, 200, true);
-
-this.Wall = new DamageZone10(game, null, 3300, 5100, 200, 200, false);
-this.Wall = new DamageZone10(game, null, 3500, 5100, 200, 200, false);
-this.Wall = new DamageZone10(game, null, 3300, 5300, 200, 200, false);
-this.Wall = new DamageZone10(game, null, 3500, 5300, 200, 200, false);
 
 this.arenaData.values.flags |= ArenaFlags.cantUseCheats;
 

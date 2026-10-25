@@ -273,6 +273,7 @@ app.listen(PORT, (success) => {
     const eve = new GameServer("events", "Events");
     const pvp = new GameServer("pvp", "PvP");
     const oby = new GameServer("obby", "Obby");
+    const gra = new GameServer("gravity", "Gravity");
 //let pvp;
 
 //try {
@@ -284,7 +285,7 @@ app.listen(PORT, (success) => {
 //}
     //if (pvp) {
     games.push(
-        sbx, dot, bal, atm, nex, sie, bho, eve, pvp, oby
+        sbx, dot, bal, atm, nex, sie, bho, eve, pvp, oby, gra
     );
 //} //else {
   //  games.push(

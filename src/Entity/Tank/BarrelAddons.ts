@@ -120,6 +120,19 @@ export class CircleVisual extends ObjectEntity {
     }
 }
 
+export class CircleArras extends ObjectEntity {
+    public constructor(barrel: Barrel) {
+        super(barrel.game);
+
+        this.setParent(barrel);
+        this.relationsData.values.team = barrel.relationsData.values.team;
+        this.physicsData.values.sides = 1;
+        this.physicsData.values.size = 115;
+
+        this.styleData.values.color = Color.Barrel;
+    }
+}
+
 export class CircleSmall extends ObjectEntity {
     public constructor(barrel: Barrel) {
         super(barrel.game);
@@ -143,6 +156,16 @@ export class ATMGAddon extends BarrelAddon {
     }
 }
 
+export class ArrasATMGAddon extends BarrelAddon {
+    public circle: CircleArras;
+
+    public constructor(owner: Barrel) {
+        super(owner);
+
+        this.circle = new CircleArras(owner);
+    }
+}
+
 export class SnailAddon extends BarrelAddon {
     public circle: CircleSmall;
     public barrel: NormalBarrelAddon;
@@ -162,5 +185,6 @@ export const BarrelAddonById: Record<barrelAddonId, typeof BarrelAddon | null> =
     trapLauncher: TrapLauncherAddon,
     purplebarrel: PurpleBarrelAddon,
     atmg: ATMGAddon,
+    arrasatmg : ArrasATMGAddon,
     snail: SnailAddon
 }

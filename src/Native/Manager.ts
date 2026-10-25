@@ -19,6 +19,7 @@
 import * as config from "../config";
 import GameServer from "../Game";
 import ObjectEntity from "../Entity/Object";
+import { EntityTags } from "../Const/Enums";
 
 import CollisionManager from "../Physics/CollisionManager";
 import SpatialHashing from "../Physics/SpatialHashing";
@@ -153,10 +154,43 @@ export default class EntityManager {
             }
         }
 
+        // Cache the gravity settings once per tick.
+        const arena = this.game.arena;
+        const gravityEnabled = arena.gravityEnabled;
+        const gravityAcceleration = arena.gravityAcceleration;
+        const gravityMultipliers = arena.gravityMultipliers;
+
         for (let id = 0; id <= this.lastId; ++id) {
             const entity = this.inner[id];
 
             if (entity && entity instanceof ObjectEntity && entity.isPhysical) {
+                if (gravityEnabled) {
+                    const tags = entity.entityTags;
+                    let multiplier = 0;
+
+                    // More specific categories take priority.
+                    if (tags & EntityTags.isDominator) {
+                        multiplier = gravityMultipliers.dominator;
+                    }
+                    else if (tags & EntityTags.isBoss) {
+                        multiplier = gravityMultipliers.boss;
+                    }
+                    else if (tags & EntityTags.isBullet) {
+                        multiplier = gravityMultipliers.bullet;
+                    }
+                    else if (tags & EntityTags.isTank) {
+                        multiplier = gravityMultipliers.tank;
+                    }
+                    else if (tags & EntityTags.isShape) {
+                        multiplier = gravityMultipliers.shape;
+                    }
+
+                    if (multiplier !== 0) {
+                        entity.velocity.y += gravityAcceleration * multiplier;
+                    }
+                }
+
+                // Keep the original physics update.
                 entity.applyPhysics();
             }
         }

@@ -46,6 +46,14 @@ export const enum ArenaState {
 	CLOSED = 3,
 }
 
+export interface GravityMultipliers{
+	tank: number;
+	shape: number;
+	bullet: number;
+	boss: number;
+	dominator: number;
+}
+
 export default class ArenaEntity extends Entity implements TeamGroupEntity {
 	public arenaData: ArenaGroup = new ArenaGroup(this);
 	public teamData: TeamGroup = new TeamGroup(this);
@@ -58,7 +66,7 @@ export default class ArenaEntity extends Entity implements TeamGroupEntity {
 	public boss: AbstractBoss | null = null;
 	public leader: TankBody | null = null;
 	protected shapes = new ShapeManager(this);
-	public ARENA_PADDING = 200;
+	public ARENA_PADDING = 200; // change to a higher value for more room beyond the white part of the map and into the grey part
 
 	public constructor(game: GameServer) {
 		super(game);
@@ -74,6 +82,21 @@ export default class ArenaEntity extends Entity implements TeamGroupEntity {
 		this.arenaData.values.flags = ArenaFlags.gameReadyStart;
 		this.teamData.values.teamColor = Color.Neutral;
 	}
+
+	/** Whether gravity is enabled for this game mode. */
+	public gravityEnabled: boolean = false;
+
+	/** Base gravity acceleration applied each tick. */
+	public gravityAcceleration: number = 0;
+
+	/** Gravity multiplier for each tagged entity category. Reminder: make a console log to make sure gravity is only being calculated in gravity arena, plus any entity with 0X multiplier should not have gravity calculated for it anyway to reduce lag. */
+	public gravityMultipliers: GravityMultipliers = {
+		tank: 0,
+		shape : 0,
+		bullet : 0,
+		boss : 0,
+		dominator : 0
+	};
 
 	public findSpawnLocation(): VectorAbstract {
 		const pos = {

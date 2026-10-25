@@ -19,7 +19,7 @@
 import GameServer from "../../Game";
 import TankBody from "../Tank/TankBody";
 
-import { Color, Stat, Tank } from "../../Const/Enums";
+import { Color, Stat, Tank, EntityTags } from "../../Const/Enums";
 import { CameraEntity } from "../../Native/Camera";
 import { AI, AIState, Inputs } from "../AI";
 
@@ -45,6 +45,7 @@ export default class Terrestrial extends TankBody {
         camera.sizeFactor = (Terrestrial.BASE_SIZE / 50); // Fix sizeFactor at a constant value
 
         super(game, camera, inputs);
+        this.entityTags |= EntityTags.isBoss;
 
         this.relationsData.values.team = game.arena;
 

@@ -38,7 +38,7 @@ export default class NecromancerSquare extends Drone {
         this.ai = new AI(this);
         this.ai.viewRange = 900;
 
-        this.physicsData.values.sides = 5;
+        this.physicsData.values.sides = 4;
         // this.physics.values.size = 55 * Math.SQRT1_2 * bulletDefinition.sizeRatio;
 
         // if (shape.isShiny) this.health.values.maxHealth = this.health.values.health *= 10

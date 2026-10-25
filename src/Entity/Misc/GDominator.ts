@@ -16,7 +16,7 @@
     along with this program. If not, see <https://www.gnu.org/licenses/>
 */
 
-import { Color, NameFlags, StyleFlags, AdminFlags, PhysicsFlags, Tank } from "../../Const/Enums";
+import { Color, NameFlags, StyleFlags, AdminFlags, PhysicsFlags, Tank, EntityTags } from "../../Const/Enums";
 import ArenaEntity from "../../Native/Arena";
 import { CameraEntity } from "../../Native/Camera";
 import { AI, AIState, Inputs } from "../AI";
@@ -49,6 +49,7 @@ export default class GDominator extends TankBody {
         camera.sizeFactor = (GDominator.SIZE / 50);
 
         super(arena.game, camera, inputs);
+        this.entityTags |= EntityTags.isDominator;
 
         this.relationsData.values.team = arena;
         this.physicsData.values.size = GDominator.SIZE;

@@ -70,7 +70,7 @@ export const enum Color {
     Lbronse = 46,
     Lsilver = 47,
     Lgold = 48,
-    Arassac = 49,
+    Arrasac = 49,
     UltraDarkPurple = 50,
     Enraged = 51,
 
@@ -131,7 +131,7 @@ export const ColorsHexCode: Record<Color, number> = {
     [Color.Lbronse]: 0xCD7F32,
     [Color.Lsilver]: 0xC0C0C0,
     [Color.Lgold]: 0xFFD700,
-    [Color.Arassac]: 0xFFEB80,
+    [Color.Arrasac]: 0xFFEB80,
     [Color.UltraDarkPurple]: 0x290f2e,
     [Color.Enraged]: 0x9a0200,
 }
@@ -196,8 +196,8 @@ export const enum Tank {
     BadArenaCloser = 80,
     BaseDrones    = 89,
     BaseGuardian  = 151,
-    EliteArenaCloser  = 152,
-    UltimateArenaCloser  = 153,
+    EliteArenaCloser = 152,
+    UltimateArenaCloser = 153,
     Atmg          = 166,
     ShinyArenaCloser = 186,
     Ares          = 187,
@@ -213,17 +213,20 @@ export const enum Tank {
     Tank          = 224,
     Shiny         = 230,
     ShinyPlus     = 231,
-    ArassArenaCloser = 240,
+    ArrasArenaCloser = 240,
     SeigeTanks    = 253,
     Spectator     = 294,
     FallenCrasher = 327,
-    HexadecagonBoss  = 328,
+    HexadecagonBoss = 328,
     SeigeGuardian = 330,
     ObbyTank      = 354,
     ObbyObsticle1 = 355,
     ObbyObsticle2 = 356,
     ObbyObsticle3 = 357,
-    ObbyTank2 = 358,
+    ObbyTank2     = 358,
+    NexusGuardian = 360,
+    BossNecromancer = 361,
+    ArrasAtmg     = 362,
 }
 
 /**
@@ -392,6 +395,16 @@ export const enum AdminFlags {
     instakill = 1 << 1,
     eraser = 1 << 2,
     targetFront = 1 << 3
+}
+/**
+ * The tag names for diferent entity types
+ */
+export const enum EntityTags {
+    isShape = 1 << 0,
+    isTank = 1 << 1,
+    isDominator = 1 << 2,
+    isBoss = 1 << 3,
+    isBullet = 1 << 4
 }
 
 /**

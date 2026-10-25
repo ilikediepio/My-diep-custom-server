@@ -50,7 +50,7 @@ export default class Obsticle extends TankBody {
 
         this.ai = new AI(this);
         this.ai.inputs = inputs;
-        this.ai.viewRange = 1000;
+        this.ai.viewRange = 1100;
 
 //console.log("Before setTank:", this.positionData.values.flags);
 

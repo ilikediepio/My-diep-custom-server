@@ -19,7 +19,7 @@
 import LivingEntity from "../../Live";
 import Barrel from "../Barrel";
 
-import { HealthFlags, PositionFlags, PhysicsFlags, Stat, StyleFlags } from "../../../Const/Enums";
+import { HealthFlags, PositionFlags, PhysicsFlags, Stat, StyleFlags, EntityTags } from "../../../Const/Enums";
 import { TankDefinition } from "../../../Const/TankDefinitions";
 import { BarrelBase } from "../TankBody";
 import { EntityStateFlags } from "../../../Native/Entity";
@@ -49,11 +49,12 @@ export default class Bullet extends LivingEntity {
     /** The tank who shot the bullet. */
     protected tank: BarrelBase;
 
-    public constructor(barrel: Barrel, tank: BarrelBase, tankDefinition: TankDefinition | null, shootAngle: number) {
+    public constructor(barrel: Barrel, tank : BarrelBase, tankDefinition : TankDefinition | null, shootAngle : number) {
         super(barrel.game);
+        this.entityTags |= EntityTags.isBullet;
 
         this.tank = tank;
-        
+
         this.tankDefinition = tankDefinition;
 
         // if (barrel.definition.bullet.type === "drone") throw new TypeError("Invalid bullet type for this class");
@@ -67,7 +68,7 @@ export default class Bullet extends LivingEntity {
 
         const bulletDefinition = barrel.definition.bullet;
         const sizeFactor = tank.sizeFactor;
-        const statLevels = tank.cameraEntity.cameraData?.values.statLevels.values;
+        const statLevels = tank.cameraEntity.cameraData ?.values.statLevels.values;
 
         this.relationsData.values.team = barrel.relationsData.values.team;
         this.relationsData.values.owner = tank;
@@ -75,7 +76,7 @@ export default class Bullet extends LivingEntity {
         this.physicsData.values.sides = bulletDefinition.sides ?? 1;
         this.physicsData.values.flags |= PhysicsFlags.noOwnTeamCollision | PhysicsFlags.canEscapeArena;
         if (tank.positionData.values.flags & PositionFlags.canMoveThroughWalls) this.positionData.values.flags |= PositionFlags.canMoveThroughWalls
-        this.physicsData.values.size = (barrel.physicsData.values.width / 2) * bulletDefinition.sizeRatio;
+            this.physicsData.values.size = (barrel.physicsData.values.width / 2) * bulletDefinition.sizeRatio;
         this.styleData.values.color = bulletDefinition.color || tank.rootParent.styleData.values.color;
         this.styleData.values.flags |= StyleFlags.hasNoDmgIndicator;
         this.healthData.values.flags = HealthFlags.hiddenHealthbar;
@@ -95,8 +96,8 @@ export default class Bullet extends LivingEntity {
 
         this.lifeLength = bulletDefinition.lifeLength * 72;
 
-        const {x, y} = tank.getWorldPosition();
-        
+        const { x, y } = tank.getWorldPosition();
+
         this.positionData.values.x = x + (Math.cos(shootAngle) * barrel.physicsData.values.size) - Math.sin(shootAngle) * barrel.definition.offset * sizeFactor + Math.cos(shootAngle) * (barrel.definition.distance || 0);
         this.positionData.values.y = y + (Math.sin(shootAngle) * barrel.physicsData.values.size) + Math.cos(shootAngle) * barrel.definition.offset * sizeFactor + Math.sin(shootAngle) * (barrel.definition.distance || 0);
         this.positionData.values.angle = shootAngle;

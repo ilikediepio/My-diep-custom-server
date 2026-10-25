@@ -12,9 +12,10 @@ import LivingEntity from "../Entity/Live";
 import ArenaCloser from "../Entity/Misc/ArenaCloser";
 import FallenAC from "../Entity/Misc/Boss/FallenAC";
 import ArenaCloserTurret from "../Entity/Misc/ArenaCloserTurret";
-import ArassArenaCloser from "../Entity/Misc/ArassIoArenaCloser";
+import ArrasArenaCloser from "../Entity/Misc/ArrasIoArenaCloser";
 import NGMArenaCloser from "../Entity/Misc/NGMArenaCloser";
 import FallenSpike from "../Entity/Misc/Boss/FallenSpike";
+import FallenNecromancer from "../Entity/Misc/Boss/FallenNecromancer";
 import Dominator from "../Entity/Misc/Dominator";
 import ObjectEntity from "../Entity/Object";
 import AbstractShape from "../Entity/Shape/AbstractShape";
@@ -786,7 +787,7 @@ dbr: (client: Client, ...args : string[]) => {
 
     console.log(`${client.toString()} (admin) broadcasted: ${ message }`);
 },
-ddbr: (client: Client, ...args : string[]) = > {
+ddbr: (client: Client, ...args : string[]) => {
     if (!client.chatToggled) return;
 
     // ======= Password check =======
@@ -811,7 +812,7 @@ ddbr: (client: Client, ...args : string[]) = > {
 
     const password = args[args.length - 1];
 
-    if (password != = DEV_CHAT_PASSWORD) {
+    if (password !== DEV_CHAT_PASSWORD) {
         client.notify(
             "Incorrect password.",
             0xFF0000,
@@ -827,7 +828,7 @@ ddbr: (client: Client, ...args : string[]) = > {
     // ======= Cooldown check =======
     const now = Date.now();
     const cooldown = 100;
-    const lastChatTime = (client as any).lastChatTime ? ? 0;
+    const lastChatTime = (client as any).lastChatTime ?? 0;
 
     if (now - lastChatTime < cooldown) {
         const remaining = Math.ceil(
@@ -847,7 +848,7 @@ ddbr: (client: Client, ...args : string[]) = > {
     // ======= Get sender name =======
     const raw = client.toString();
     const match = raw.match(/ name = "([^"] + )"/);
-        const senderName = match ? .[1] ? ? "Dev";
+        const senderName = match ?.[1] ?? "Dev";
 
     // ======= Message duration scaling =======
     const base = 5000;
@@ -861,7 +862,7 @@ ddbr: (client: Client, ...args : string[]) = > {
     );
 
     // ======= Broadcast =======
-    client.game ? .broadcast()
+    client.game ?.broadcast()
         .u8(ClientBound.Notification)
         .stringNT(`${senderName}: ${ message }`)
             .u32(0x00FF00)
@@ -1702,7 +1703,7 @@ const entityMap = new Map<string, new (...args: any[]) => ObjectEntity>([
     ["sq", Square],
     ["tri", Triangle],
     ["sac", ShinyArenaCloser],
-    ["aac", ArassArenaCloser],
+    ["aac", ArrasArenaCloser],
     ["mot", Mothership],
     ["csq", CrystalisedSquare],
     ["hex", Hexagon],
@@ -1740,6 +1741,7 @@ const entityMap = new Map<string, new (...args: any[]) => ObjectEntity>([
     ["fd", FallenDodger],
     ["efd", EnragedFallenDodger],
     ["ball", Ball],
+    ["nec", FallenNecromancer],
 //    ["wl", Wall], very bugged, make super_admin instead of admin
 //    ["bwl", BounceWall], very bugged, make super_admin instead of admin
 ]);

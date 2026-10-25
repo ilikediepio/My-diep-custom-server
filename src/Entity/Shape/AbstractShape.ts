@@ -19,7 +19,7 @@
 import GameServer from "../../Game";
 import LivingEntity from "../Live";
 
-import { Color, PositionFlags, NameFlags } from "../../Const/Enums";
+import { Color, PositionFlags, NameFlags, EntityTags } from "../../Const/Enums";
 import { NameGroup } from "../../Native/FieldGroups";
 import { AI } from "../AI";
 import { normalizeAngle, PI2 } from "../../util";
@@ -65,6 +65,7 @@ export default class AbstractShape extends LivingEntity {
 
     public constructor(game: GameServer) {
         super(game);
+        this.entityTags |= EntityTags.isShape;
 
         this.relationsData.values.team = game.arena;
 

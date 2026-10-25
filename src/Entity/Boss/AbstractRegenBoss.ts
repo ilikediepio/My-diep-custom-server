@@ -19,7 +19,7 @@
 import GameServer from "../../Game";
 import Barrel from "../Tank/Barrel";
 
-import { ClientBound, Color, PositionFlags } from "../../Const/Enums";
+import { ClientBound, Color, PositionFlags, EntityTags } from "../../Const/Enums";
 import { VectorAbstract } from "../../Physics/Vector";
 import { AI, AIState, Inputs } from "../AI";
 import { NameGroup } from "../../Native/FieldGroups";
@@ -115,6 +115,7 @@ export default class AbstractRegenBoss extends LivingEntity {
 
     public constructor(game: GameServer) {
         super(game);
+        this.entityTags |= EntityTags.isBoss;
 
         const {x, y} = this.game.arena.findSpawnLocation()
         this.positionData.values.x = x;

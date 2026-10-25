@@ -19,16 +19,16 @@
 import GameServer from "../../Game";
 import TankBody from "../Tank/TankBody";
 
-import { Color, PhysicsFlags, PositionFlags, Stat, Tank } from "../../Const/Enums";
+import { Color, PhysicsFlags, PositionFlags, AdminFlags, Stat, Tank } from "../../Const/Enums";
 import { CameraEntity } from "../../Native/Camera";
 import { AI, AIState, Inputs } from "../AI";
 
 /**
- * Represents the Arena Closers that end the game.
+ * Represents the ATMG from Arras.io
  */
-export default class ArenaCloser extends TankBody {
-    /** Size of a level 0 Arena Closer. */
-    public static BASE_SIZE = 230;
+export default class Atmg extends TankBody {
+    /** Size of a default ATMG. */
+    public static BASE_SIZE = 175;
     
     /** The AI that controls how the AC moves. */
     public ai: AI;
@@ -40,30 +40,28 @@ export default class ArenaCloser extends TankBody {
         const setLevel = camera.setLevel;
         camera.setLevel = function(level) {
             setLevel.call(this, 1); // Set the level to always be 1
-            this.sizeFactor = (ArenaCloser.BASE_SIZE / 50); // Keep size constant
+            this.sizeFactor = (Atmg.BASE_SIZE / 50); // Keep size constant
         }
-        camera.sizeFactor = (ArenaCloser.BASE_SIZE / 50); // Fix sizeFactor at a constant value
+        camera.sizeFactor = (Atmg.BASE_SIZE / 50); // Fix sizeFactor at a constant value
 
         super(game, camera, inputs);
 
-        this.relationsData.values.team = game.arena;
-
         this.ai = new AI(this);
         this.ai.inputs = inputs;
-        this.ai.viewRange = Infinity; // Keep AI's view range unlimited
+        this.ai.viewRange = 6000;
 
-        this.setTank(Tank.ArassArenaCloser);
+        this.setTank(Tank.Atmg);
+        this.ai.onlyTargetPlayers = true;
+        this.flags.adminFlags |= AdminFlags.immuneToKillCommand;
 
         const def = (this.definition = Object.assign({}, this.definition));
-        def.maxHealth = 1000000000;
-        def.speed = 1.75; // Keep speed constant, independent of level
+        def.maxHealth = 1000000;
+        def.speed = 0; // Keep speed constant, independent of level
 
-        this.damagePerTick = 1000000;
+        this.damagePerTick = 50000;
 
-        this.nameData.values.name = "Arass Arena Closer";
-        this.styleData.values.color = Color.Arassac;
-        this.positionData.values.flags |= PositionFlags.canMoveThroughWalls;
-        this.physicsData.values.flags |= PhysicsFlags.canEscapeArena;
+        this.nameData.values.name = "Atmg";
+        this.styleData.values.color = Color.TeamRed;
         this.physicsData.values.flags |= PhysicsFlags.fixedSize;
         camera.cameraData.values.player = this;
 
@@ -73,10 +71,11 @@ export default class ArenaCloser extends TankBody {
 
         // Make sure all stats are fixed, unaffected by level scaling
         for (let i = Stat.MovementSpeed; i < Stat.BodyDamage; ++i) {
-            camera.cameraData.values.statLevels.values[i] = 7;
+            camera.cameraData.values.statLevels.values[i] = 0;
         }
 
         this.ai.aimSpeed = this.barrels[0].bulletAccel * 1.6;
+        //this.setInvulnerability(true);
     }
 
     public tick(tick: number) {

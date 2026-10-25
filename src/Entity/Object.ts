@@ -90,6 +90,7 @@ export default class ObjectEntity extends Entity {
     public children: ObjectEntity[] = [];
 
     public flags: { adminFlags: number } = { adminFlags: 0 };
+    public entityTags: number = 0;
 
     /** Used to determine the parent of all parents. */
     public rootParent: ObjectEntity = this;
@@ -279,13 +280,40 @@ export default class ObjectEntity extends Entity {
             const entity = entities[i];
             if (entity === this) continue;
             if (entity.deletionAnimation) continue;
-            if (entity.relationsData.values.team === this.relationsData.values.team) { // this causes lag, make it only do this code if a player is an a server. (rest ignored untill player spawns there)
-                if ((entity.physicsData.values.flags & PhysicsFlags.noOwnTeamCollision) ||
-                    (this.physicsData.values.flags & PhysicsFlags.noOwnTeamCollision)) continue;
 
-                if (entity.relationsData.values.owner !== this.relationsData.values.owner) {
-                    if ((entity.physicsData.values.flags & PhysicsFlags.onlySameOwnerCollision) ||
-                        (this.physicsData.values.flags & PhysicsFlags.onlySameOwnerCollision)) continue;
+            // bug fixing code
+            const thisFlags = this.physicsData.values.flags;
+            const entityFlags = entity.physicsData.values.flags;
+
+            // Identify projectile-wall collisions in either direction.
+            const isProjectileWallPair =
+                (
+                    (thisFlags & PhysicsFlags.noOwnTeamCollision) !== 0 &&
+                    (entityFlags & PhysicsFlags.isSolidWall) !== 0
+                    ) ||
+                (
+                    (entityFlags & PhysicsFlags.noOwnTeamCollision) !== 0 &&
+                    (thisFlags & PhysicsFlags.isSolidWall) !== 0
+                    );
+
+            // Apply the usual team filters, except to projectile-wall pairs.
+            if (
+                entity.relationsData.values.team === this.relationsData.values.team &&
+                !isProjectileWallPair
+                ) {
+                if (
+                    (entityFlags & PhysicsFlags.noOwnTeamCollision) ||
+                    (thisFlags & PhysicsFlags.noOwnTeamCollision)
+                    ) continue;
+
+                if (
+                    entity.relationsData.values.owner !==
+                    this.relationsData.values.owner
+                    ) {
+                    if (
+                        (entityFlags & PhysicsFlags.onlySameOwnerCollision) ||
+                        (thisFlags & PhysicsFlags.onlySameOwnerCollision)
+                        ) continue;
                 }
             }
             

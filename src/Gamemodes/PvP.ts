@@ -68,7 +68,7 @@ public endGame(winningTeam: "blue" | "red") {
 
     this.game.broadcast()
         .u8(ClientBound.Notification)
-        .stringNT(`${winningTeam.toUpperCase()} TEAM WINS!`)
+        .stringNT(`${winningTeam.toUpperCase()} TEAM WINS!`) // fix the bug where this always says that blue won
         .u32(winningTeam === "blue" ? Color.TeamBlue : Color.TeamRed)
         .float(-1)
         .stringNT("")

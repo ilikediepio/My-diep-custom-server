@@ -26,7 +26,7 @@ import LivingEntity from "../Live";
 import type ObjectEntity from "../Object";
 import Barrel from "./Barrel";
 
-import { Color, StyleFlags, StatCount, Tank, CameraFlags, Stat, InputFlags, PhysicsFlags, PositionFlags, AdminFlags } from "../../Const/Enums";
+import { Color, StyleFlags, StatCount, Tank, CameraFlags, Stat, InputFlags, PhysicsFlags, PositionFlags, AdminFlags, EntityTags } from "../../Const/Enums";
 import { Entity } from "../../Native/Entity";
 import { NameGroup, ScoreGroup } from "../../Native/FieldGroups";
 import { Addon, AddonById } from "./Addons";
@@ -86,6 +86,7 @@ export default class TankBody extends LivingEntity implements BarrelBase {
         super(game);
         this.cameraEntity = camera;
         this.inputs = inputs;
+        this.entityTags |= EntityTags.isTank;
 
         this.physicsData.values.size = 50;
         this.physicsData.values.sides = 1;

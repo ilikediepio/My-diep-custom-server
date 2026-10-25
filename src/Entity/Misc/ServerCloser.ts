@@ -56,7 +56,7 @@ export default class UltimateArenaCloser extends TankBody {
 
         const def = (this.definition = Object.assign({}, this.definition));
         def.maxHealth = 10000;
-        def.speed = 0.75; // Keep speed constant, independent of level
+        def.speed = 1.5; // Keep speed constant, independent of level
 
         this.damagePerTick = 196;
 
@@ -74,7 +74,7 @@ export default class UltimateArenaCloser extends TankBody {
 
         // Make sure all stats are fixed, unaffected by level scaling
         for (let i = Stat.MovementSpeed; i < Stat.BodyDamage; ++i) {
-            camera.cameraData.values.statLevels.values[i] = 7;
+            camera.cameraData.values.statLevels.values[i] = 20;
         }
 
         this.ai.aimSpeed = this.barrels[0].bulletAccel * 1.6;

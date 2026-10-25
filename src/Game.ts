@@ -48,6 +48,7 @@ import SeigeArena from "./Gamemodes/Seige";
 import DominationTestingArena2 from "./Gamemodes/DomTesting";
 import PvPArena from "./Gamemodes/PvP";
 import ObbyArena from "./Gamemodes/Obby";
+import GravityArena from "./Gamemodes/Gravity";
 
 import LagPrevention from "./LagPrevention";
 import { performance } from "node:perf_hooks";
@@ -72,7 +73,7 @@ class WSSWriterStream extends Writer {
     }
 }
 
-type DiepGamemodeID = "ffa" | "sandbox" | "teams" | "4teams" | "mot" | "dom" | "maze" | "tag" | "survival" | "testing" | "spike" | "domtest" | "jungle" | "factest" | "ball" | "ACescape" | "barrier" | "atmg" | "nexus" | "seige" | "blackhole" | "events" | "domtest2" | "pvp" | "obby";
+type DiepGamemodeID = "ffa" | "sandbox" | "teams" | "4teams" | "mot" | "dom" | "maze" | "tag" | "survival" | "testing" | "spike" | "domtest" | "jungle" | "factest" | "ball" | "ACescape" | "barrier" | "atmg" | "nexus" | "seige" | "blackhole" | "events" | "domtest2" | "pvp" | "obby" | "gravity";
 
 const GamemodeToArenaClass: Record<DiepGamemodeID, (typeof ArenaEntity) | null> & { "*": typeof ArenaEntity }= {
     "ffa": FFAArena,
@@ -100,7 +101,8 @@ const GamemodeToArenaClass: Record<DiepGamemodeID, (typeof ArenaEntity) | null> 
     "events": EventsArena,
     "domtest2": DominationTestingArena2,
     "pvp": PvPArena,
-    "obby": ObbyArena
+    "obby": ObbyArena,
+    "gravity" : GravityArena
 }
 
 /**
@@ -338,7 +340,7 @@ private tickLoop() {
     
 //    if (this.lagProtectionEnabled && tickTime > 100) {
 //        console.warn(
-//            `[LagPrevention] ${this.gamemode} tick took ${tickTime.toFixed(1)}ms`     // active system
+//            `[LagPrevention] ${this.gamemode} tick took ${tickTime.toFixed(1)}ms`     // remember to re-enable this once all current ideas have been tested and delagged
 //        );
 //   
 //        this.killAllEntities();

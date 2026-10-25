@@ -19,12 +19,12 @@
 import GameServer from "../../Game";
 import TankBody from "../Tank/TankBody";
 
-import { Color, PhysicsFlags, PositionFlags, AdminFlags, Stat, Tank } from "../../Const/Enums";
+import { Color, PhysicsFlags, PositionFlags, AdminFlags, Stat, Tank, EntityTags } from "../../Const/Enums";
 import { CameraEntity } from "../../Native/Camera";
 import { AI, AIState, Inputs } from "../AI";
 
 /**
- * Represents the Arena Closers that end the game.
+ * Represents the ATMG from arras.io.
  */
 export default class Atmg extends TankBody {
     /** Size of a level 0 Arena Closer. */
@@ -46,6 +46,7 @@ export default class Atmg extends TankBody {
         camera.sizeFactor = (Atmg.BASE_SIZE / 50); // Fix sizeFactor at a constant value
 
         super(game, camera, inputs);
+        this.entityTags |= EntityTags.isDominator;
 
         this.ai = new AI(this);
         this.ai.inputs = inputs;
